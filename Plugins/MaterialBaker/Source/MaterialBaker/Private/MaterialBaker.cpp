@@ -54,24 +54,12 @@ void FMaterialBakerModule::ShutdownModule()
 
 TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-	FText WidgetText = FText::Format(
-		LOCTEXT("WindowWidgetText", "Add code to {0} in {1} to override this window's contents"),
-		FText::FromString(TEXT("FMaterialBakerModule::OnSpawnPluginTab")),
-		FText::FromString(TEXT("MaterialBaker.cpp"))
-		);
-
-	return SNew(SDockTab)
-		.TabRole(ETabRole::NomadTab)
-		[
-			// Put your tab content here!
-			SNew(SBox)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(WidgetText)
-			]
-		];
+    // For now the window is empty. Content will be added in future updates.
+    return SNew(SDockTab)
+            .TabRole(ETabRole::NomadTab)
+            [
+                    SNew(SBox)
+            ];
 }
 
 void FMaterialBakerModule::PluginButtonClicked()
@@ -84,13 +72,21 @@ void FMaterialBakerModule::RegisterMenus()
 	// Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
 	FToolMenuOwnerScoped OwnerScoped(this);
 
-	{
-		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
-		{
-			FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
-			Section.AddMenuEntryWithCommandList(FMaterialBakerCommands::Get().OpenPluginWindow, PluginCommands);
-		}
-	}
+        {
+                UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
+                {
+                        FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
+                        Section.AddMenuEntryWithCommandList(FMaterialBakerCommands::Get().OpenPluginWindow, PluginCommands);
+                }
+        }
+
+        {
+                UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Tools");
+                {
+                        FToolMenuSection& Section = Menu->FindOrAddSection("Tools");
+                        Section.AddMenuEntryWithCommandList(FMaterialBakerCommands::Get().OpenPluginWindow, PluginCommands);
+                }
+        }
 
 	{
 		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar");
