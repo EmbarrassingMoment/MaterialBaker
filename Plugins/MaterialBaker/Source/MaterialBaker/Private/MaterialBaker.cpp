@@ -15,91 +15,133 @@ static const FName MaterialBakerTabName("MaterialBaker");
 
 void FMaterialBakerModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-	
-	FMaterialBakerStyle::Initialize();
-	FMaterialBakerStyle::ReloadTextures();
+    // This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+    
+    FMaterialBakerStyle::Initialize();
+    FMaterialBakerStyle::ReloadTextures();
 
-	FMaterialBakerCommands::Register();
-	
-	PluginCommands = MakeShareable(new FUICommandList);
+    FMaterialBakerCommands::Register();
+    
+    PluginCommands = MakeShareable(new FUICommandList);
 
-	PluginCommands->MapAction(
-		FMaterialBakerCommands::Get().OpenPluginWindow,
-		FExecuteAction::CreateRaw(this, &FMaterialBakerModule::PluginButtonClicked),
-		FCanExecuteAction());
+    PluginCommands->MapAction(
+        FMaterialBakerCommands::Get().OpenPluginWindow,
+        FExecuteAction::CreateRaw(this, &FMaterialBakerModule::PluginButtonClicked),
+        FCanExecuteAction());
 
-	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMaterialBakerModule::RegisterMenus));
-	
-	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(MaterialBakerTabName, FOnSpawnTab::CreateRaw(this, &FMaterialBakerModule::OnSpawnPluginTab))
-		.SetDisplayName(LOCTEXT("FMaterialBakerTabTitle", "MaterialBaker"))
-		.SetMenuType(ETabSpawnerMenuType::Hidden);
+    UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMaterialBakerModule::RegisterMenus));
+    
+    FGlobalTabmanager::Get()->RegisterNomadTabSpawner(MaterialBakerTabName, FOnSpawnTab::CreateRaw(this, &FMaterialBakerModule::OnSpawnPluginTab))
+        .SetDisplayName(LOCTEXT("FMaterialBakerTabTitle", "MaterialBaker"))
+        .SetMenuType(ETabSpawnerMenuType::Hidden);
 }
 
 void FMaterialBakerModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
+    // This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
+    // we call this function before unloading the module.
 
-	UToolMenus::UnRegisterStartupCallback(this);
+    UToolMenus::UnRegisterStartupCallback(this);
 
-	UToolMenus::UnregisterOwner(this);
+    UToolMenus::UnregisterOwner(this);
 
-	FMaterialBakerStyle::Shutdown();
+    FMaterialBakerStyle::Shutdown();
 
-	FMaterialBakerCommands::Unregister();
+    FMaterialBakerCommands::Unregister();
 
-	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(MaterialBakerTabName);
+    FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(MaterialBakerTabName);
 }
 
 TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-    // For now the window is empty. Content will be added in future updates.
-    return SNew(SDockTab)
-            .TabRole(ETabRole::NomadTab)
-            [
-                    SNew(SBox)
-            ];
+	// ここでウィンドウの中身となるウィジェットを作成します。
+	// SVerticalBoxはウィジェットを縦に並べるためのコンテナです。
+	TSharedRef<SWidget> WidgetContent = SNew(SVerticalBox)
+
+		// マテリアル選択のラベル
+		+ SVerticalBox::Slot()
+		.AutoHeight() // 高さをコンテンツに合わせる
+		.Padding(5.0f)   // 周囲に余白
+		[
+			SNew(STextBlock)
+				.Text(LOCTEXT("SelectMaterialLabel", "Target Material"))
+		]
+
+		// マテリアルを選択するアセットピッカー（後で実装）
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			// 今はプレースホルダーとしてSBoxを配置
+			SNew(SBox)
+				.MinDesiredWidth(300.f)
+				[
+					SNew(STextBlock)
+						.Text(LOCTEXT("MaterialAssetPicker", " Material Asset Picker will go here ")) // "Material Asset Picker will go here"
+				]
+		]
+
+	// テクスチャサイズのラベル
+	+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(STextBlock)
+				.Text(LOCTEXT("TextureSizeLabel", "Bake Texture Size"))
+		]
+
+		// テクスチャサイズを選択するドロップダウン（後で実装）
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			// 今はプレースホルダーとしてSBoxを配置
+			SNew(SBox)
+				[
+					SNew(STextBlock)
+						.Text(LOCTEXT("TextureSizeDropdown", " Texture Size Dropdown will go here ")) // "Texture Size Dropdown will go here"
+				]
+		]
+
+	// ベイク実行ボタン
+	+ SVerticalBox::Slot()
+		.HAlign(HAlign_Right) // 右寄せ
+		.Padding(10.0f)
+		[
+			SNew(SButton)
+				.Text(LOCTEXT("BakeButton", "Bake Material"))
+				/* .OnClicked( ... ) */ // ボタンが押された時の処理を後で追加
+		];
+
+
+	// 作成したウィジェットをDockTabのコンテンツとして設定
+	return SNew(SDockTab)
+		.TabRole(ETabRole::NomadTab)
+		[
+			WidgetContent
+		];
 }
 
 void FMaterialBakerModule::PluginButtonClicked()
 {
-	FGlobalTabmanager::Get()->TryInvokeTab(MaterialBakerTabName);
+    FGlobalTabmanager::Get()->TryInvokeTab(MaterialBakerTabName);
 }
 
 void FMaterialBakerModule::RegisterMenus()
 {
-	// Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
-	FToolMenuOwnerScoped OwnerScoped(this);
+    // Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
+    FToolMenuOwnerScoped OwnerScoped(this);
 
+    {
+        UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Tools");
         {
-                UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
-                {
-                        FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
-                        Section.AddMenuEntryWithCommandList(FMaterialBakerCommands::Get().OpenPluginWindow, PluginCommands);
-                }
+            // "Tools"セクションを探すのではなく、"MaterialBaker"という名前で新しいセクションを追加する
+            FToolMenuSection& Section = Menu->AddSection("MaterialBaker", TAttribute<FText>(LOCTEXT("MaterialBakerMenuHeading", "Material Baker")));
+            Section.AddMenuEntryWithCommandList(FMaterialBakerCommands::Get().OpenPluginWindow, PluginCommands);
         }
-
-        {
-                UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Tools");
-                {
-                        FToolMenuSection& Section = Menu->FindOrAddSection("Tools");
-                        Section.AddMenuEntryWithCommandList(FMaterialBakerCommands::Get().OpenPluginWindow, PluginCommands);
-                }
-        }
-
-	{
-		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar");
-		{
-			FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("Settings");
-			{
-				FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FMaterialBakerCommands::Get().OpenPluginWindow));
-				Entry.SetCommandList(PluginCommands);
-			}
-		}
-	}
+    }
 }
 
 #undef LOCTEXT_NAMESPACE
-	
+    
 IMPLEMENT_MODULE(FMaterialBakerModule, MaterialBaker)
