@@ -42,10 +42,13 @@ public class MaterialBaker : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore",
-				// ... add private dependencies that you statically link with here ...	
-			}
-			);
+                               "SlateCore",
+                               "PropertyEditor",
+                               "ContentBrowser",
+                               "AssetRegistry",
+                               // ... add private dependencies that you statically link with here ...
+                       }
+                       );
 		
 		
 		DynamicallyLoadedModuleNames.AddRange(

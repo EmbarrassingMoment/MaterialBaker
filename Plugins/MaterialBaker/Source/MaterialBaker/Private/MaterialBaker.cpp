@@ -8,7 +8,9 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "ToolMenus.h"
+#include "PropertyCustomizationHelpers.h"
 
+#include "AssetRegistry/AssetData.h"
 static const FName MaterialBakerTabName("MaterialBaker");
 
 #define LOCTEXT_NAMESPACE "FMaterialBakerModule"
@@ -54,25 +56,23 @@ void FMaterialBakerModule::ShutdownModule()
 
 TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-	// ‚±‚±‚ÅƒEƒBƒ“ƒhƒE‚Ì’†g‚Æ‚È‚éƒEƒBƒWƒFƒbƒg‚ğì¬‚µ‚Ü‚·B
-	// SVerticalBox‚ÍƒEƒBƒWƒFƒbƒg‚ğc‚É•À‚×‚é‚½‚ß‚ÌƒRƒ“ƒeƒi‚Å‚·B
-	TSharedRef<SWidget> WidgetContent = SNew(SVerticalBox)
+                + SVerticalBox::Slot()
+                .AutoHeight()
+                .Padding(5.0f)
+                [
+                    SNew(SObjectPropertyEntryBox)
+                        .AllowedClass(UMaterialInterface::StaticClass())
+                        .ObjectPath_Lambda([this]() -> FString { return SelectedMaterial ? SelectedMaterial->GetPathName() : FString(); })
+                        .OnObjectChanged_Lambda([this](const FAssetData& AssetData) { SelectedMaterial = Cast<UMaterialInterface>(AssetData.GetAsset()); })
+                        .MinDesiredWidth(300.f)
+                ]
 
-		// ƒ}ƒeƒŠƒAƒ‹‘I‘ğ‚Ìƒ‰ƒxƒ‹
-		+ SVerticalBox::Slot()
-		.AutoHeight() // ‚‚³‚ğƒRƒ“ƒeƒ“ƒc‚É‡‚í‚¹‚é
-		.Padding(5.0f)   // üˆÍ‚É—]”’
-		[
-			SNew(STextBlock)
-				.Text(LOCTEXT("SelectMaterialLabel", "Target Material"))
-		]
-
-		// ƒ}ƒeƒŠƒAƒ‹‚ğ‘I‘ğ‚·‚éƒAƒZƒbƒgƒsƒbƒJ[iŒã‚ÅÀ‘•j
+		// ãƒãƒ†ãƒªã‚¢ãƒ«ã‚’é¸æŠã™ã‚‹ã‚¢ã‚»ãƒƒãƒˆãƒ”ãƒƒã‚«ãƒ¼ï¼ˆå¾Œã§å®Ÿè£…ï¼‰
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			// ¡‚ÍƒvƒŒ[ƒXƒzƒ‹ƒ_[‚Æ‚µ‚ÄSBox‚ğ”z’u
+			// ä»Šã¯ãƒ—ãƒ¬ãƒ¼ã‚¹ãƒ›ãƒ«ãƒ€ãƒ¼ã¨ã—ã¦SBoxã‚’é…ç½®
 			SNew(SBox)
 				.MinDesiredWidth(300.f)
 				[
@@ -81,7 +81,7 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 				]
 		]
 
-	// ƒeƒNƒXƒ`ƒƒƒTƒCƒY‚Ìƒ‰ƒxƒ‹
+	// ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚µã‚¤ã‚ºã®ãƒ©ãƒ™ãƒ«
 	+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
@@ -90,12 +90,12 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 				.Text(LOCTEXT("TextureSizeLabel", "Bake Texture Size"))
 		]
 
-		// ƒeƒNƒXƒ`ƒƒƒTƒCƒY‚ğ‘I‘ğ‚·‚éƒhƒƒbƒvƒ_ƒEƒ“iŒã‚ÅÀ‘•j
+		// ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚µã‚¤ã‚ºã‚’é¸æŠã™ã‚‹ãƒ‰ãƒ­ãƒƒãƒ—ãƒ€ã‚¦ãƒ³ï¼ˆå¾Œã§å®Ÿè£…ï¼‰
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			// ¡‚ÍƒvƒŒ[ƒXƒzƒ‹ƒ_[‚Æ‚µ‚ÄSBox‚ğ”z’u
+			// ä»Šã¯ãƒ—ãƒ¬ãƒ¼ã‚¹ãƒ›ãƒ«ãƒ€ãƒ¼ã¨ã—ã¦SBoxã‚’é…ç½®
 			SNew(SBox)
 				[
 					SNew(STextBlock)
@@ -103,18 +103,18 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 				]
 		]
 
-	// ƒxƒCƒNÀsƒ{ƒ^ƒ“
+	// ãƒ™ã‚¤ã‚¯å®Ÿè¡Œãƒœã‚¿ãƒ³
 	+ SVerticalBox::Slot()
-		.HAlign(HAlign_Right) // ‰EŠñ‚¹
+		.HAlign(HAlign_Right) // å³å¯„ã›
 		.Padding(10.0f)
 		[
 			SNew(SButton)
 				.Text(LOCTEXT("BakeButton", "Bake Material"))
-				/* .OnClicked( ... ) */ // ƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½‚Ìˆ—‚ğŒã‚Å’Ç‰Á
+				/* .OnClicked( ... ) */ // ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸæ™‚ã®å‡¦ç†ã‚’å¾Œã§è¿½åŠ 
 		];
 
 
-	// ì¬‚µ‚½ƒEƒBƒWƒFƒbƒg‚ğDockTab‚ÌƒRƒ“ƒeƒ“ƒc‚Æ‚µ‚Äİ’è
+	// ä½œæˆã—ãŸã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã‚’DockTabã®ã‚³ãƒ³ãƒ†ãƒ³ãƒ„ã¨ã—ã¦è¨­å®š
 	return SNew(SDockTab)
 		.TabRole(ETabRole::NomadTab)
 		[
@@ -135,7 +135,7 @@ void FMaterialBakerModule::RegisterMenus()
     {
         UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Tools");
         {
-            // "Tools"ƒZƒNƒVƒ‡ƒ“‚ğ’T‚·‚Ì‚Å‚Í‚È‚­A"MaterialBaker"‚Æ‚¢‚¤–¼‘O‚ÅV‚µ‚¢ƒZƒNƒVƒ‡ƒ“‚ğ’Ç‰Á‚·‚é
+            // "Tools"ã‚»ã‚¯ã‚·ãƒ§ãƒ³ã‚’æ¢ã™ã®ã§ã¯ãªãã€"MaterialBaker"ã¨ã„ã†åå‰ã§æ–°ã—ã„ã‚»ã‚¯ã‚·ãƒ§ãƒ³ã‚’è¿½åŠ ã™ã‚‹
             FToolMenuSection& Section = Menu->AddSection("MaterialBaker", TAttribute<FText>(LOCTEXT("MaterialBakerMenuHeading", "Material Baker")));
             Section.AddMenuEntryWithCommandList(FMaterialBakerCommands::Get().OpenPluginWindow, PluginCommands);
         }
