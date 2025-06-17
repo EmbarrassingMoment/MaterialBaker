@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Modules/ModuleManager.h"
+#include "Materials/MaterialInterface.h"
 
 class FToolBarBuilder;
 class FMenuBuilder;
@@ -25,5 +26,8 @@ private:
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
 
 private:
-	TSharedPtr<class FUICommandList> PluginCommands;
+       TSharedPtr<class FUICommandList> PluginCommands;
+
+       /** Material asset selected in the UI */
+       class UMaterialInterface* SelectedMaterial = nullptr;
 };
