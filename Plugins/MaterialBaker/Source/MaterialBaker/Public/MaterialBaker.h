@@ -4,9 +4,12 @@
 
 #include "Modules/ModuleManager.h"
 #include "Materials/MaterialInterface.h"
+#include "AssetRegistry/AssetData.h" 
 
 class FToolBarBuilder;
 class FMenuBuilder;
+class SBox; // SBox‚Ì‘O•ûéŒ¾‚ğ’Ç‰Á
+class FAssetThumbnailPool; // FAssetThumbnailPool‚Ì‘O•ûéŒ¾‚ğ’Ç‰Á
 
 class FMaterialBakerModule : public IModuleInterface
 {
@@ -15,10 +18,10 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-	
+
 	/** This function will be bound to Command (by default it will bring up plugin window) */
 	void PluginButtonClicked();
-	
+
 private:
 
 	void RegisterMenus();
@@ -26,8 +29,14 @@ private:
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
 
 private:
-       TSharedPtr<class FUICommandList> PluginCommands;
+	TSharedPtr<class FUICommandList> PluginCommands;
 
-       /** Material asset selected in the UI */
-       class UMaterialInterface* SelectedMaterial = nullptr;
+	/** Material asset selected in the UI */
+	class UMaterialInterface* SelectedMaterial = nullptr;
+
+	/** Thumbnail pool for the asset thumbnail */
+	TSharedPtr<FAssetThumbnailPool> ThumbnailPool;
+
+	/** Box to hold the thumbnail widget */
+	TSharedPtr<SBox> ThumbnailBox;
 };
