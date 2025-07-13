@@ -9,6 +9,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "ToolMenus.h"
 #include "PropertyCustomizationHelpers.h"
+#include "SMaterialDropTarget.h"
 
 #include "AssetRegistry/AssetData.h"
 static const FName MaterialBakerTabName("MaterialBaker");
@@ -56,32 +57,46 @@ void FMaterialBakerModule::ShutdownModule()
 
 TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
+    // 1. STextBlockウィジェットへのポインタを先に宣言
+    TSharedPtr<STextBlock> SelectedMaterialNameWidget;
+
+    // 2. ラムダ式で使うSTextBlockを先にSAssignNewで生成
+    SAssignNew(SelectedMaterialNameWidget, STextBlock)
+        .Text_Lambda([this]() -> FText {
+        // SelectedMaterial の状態に応じて表示テキストを切り替え
+        if (SelectedMaterial)
+        {
+            return FText::FromString(SelectedMaterial->GetName());
+        }
+        return LOCTEXT("NoMaterialSelected", "No Material Selected");
+            });
+
     TSharedRef<SVerticalBox> WidgetContent = SNew(SVerticalBox)
         + SVerticalBox::Slot()
         .AutoHeight()
         .Padding(5.0f)
         [
-            SNew(SBox)
-            .WidthOverride(300.f)
-            [
-                SNew(SObjectPropertyEntryBox)
-                .AllowedClass(UMaterialInterface::StaticClass())
-                .ObjectPath_Lambda([this]() -> FString { return SelectedMaterial ? SelectedMaterial->GetPathName() : FString(); })
-                .OnObjectChanged_Lambda([this](const FAssetData& AssetData) { SelectedMaterial = Cast<UMaterialInterface>(AssetData.GetAsset()); })
-            ]
+            SNew(SMaterialDropTarget)
+                // 3. ラムダ式で TSharedPtr を値でキャプチャする
+                .OnMaterialDropped_Lambda([this, SelectedMaterialNameWidget](UMaterialInterface* Material)
+                    {
+                        // ドロップされたマテリアルをメンバ変数に保持
+                        SelectedMaterial = Material;
+                        // TextBlockの表示を更新
+                        if (SelectedMaterialNameWidget.IsValid() && SelectedMaterial)
+                        {
+                            SelectedMaterialNameWidget->SetText(FText::FromString(SelectedMaterial->GetName()));
+                        }
+                    })
         ]
 
-        // マテリアルを選択するアセットピッカー（後で実装）
-        + SVerticalBox::Slot()
+    // 選択されたマテリアル名を表示するウィジェット
+    + SVerticalBox::Slot()
         .AutoHeight()
         .Padding(5.0f)
         [
-            SNew(SBox)
-            .MinDesiredWidth(300.f)
-            [
-                SNew(STextBlock)
-                .Text(LOCTEXT("MaterialAssetPicker", " Material Asset Picker will go here "))
-            ]
+            // 4. 先に生成したウィジェットをレイアウトに追加
+            SelectedMaterialNameWidget.ToSharedRef()
         ]
 
         // テクスチャサイズのラベル
@@ -90,7 +105,7 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
         .Padding(5.0f)
         [
             SNew(STextBlock)
-            .Text(LOCTEXT("TextureSizeLabel", "Bake Texture Size"))
+                .Text(LOCTEXT("TextureSizeLabel", "Bake Texture Size"))
         ]
 
         // テクスチャサイズを選択するドロップダウン（後で実装）
@@ -99,19 +114,19 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
         .Padding(5.0f)
         [
             SNew(SBox)
-            [
-                SNew(STextBlock)
-                .Text(LOCTEXT("TextureSizeDropdown", " Texture Size Dropdown will go here "))
-            ]
+                [
+                    SNew(STextBlock)
+                        .Text(LOCTEXT("TextureSizeDropdown", " Texture Size Dropdown will go here "))
+                ]
         ]
 
-        // ベイク実行ボタン
-        + SVerticalBox::Slot()
+    // ベイク実行ボタン
+    + SVerticalBox::Slot()
         .HAlign(HAlign_Right)
         .Padding(10.0f)
         [
             SNew(SButton)
-            .Text(LOCTEXT("BakeButton", "Bake Material"))
+                .Text(LOCTEXT("BakeButton", "Bake Material"))
         ];
 
     return SNew(SDockTab)
@@ -134,7 +149,6 @@ void FMaterialBakerModule::RegisterMenus()
     {
         UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Tools");
         {
-            // "Tools"セクションを探すのではなく、"MaterialBaker"という名前で新しいセクションを追加する
             FToolMenuSection& Section = Menu->AddSection("MaterialBaker", TAttribute<FText>(LOCTEXT("MaterialBakerMenuHeading", "Material Baker")));
             Section.AddMenuEntryWithCommandList(FMaterialBakerCommands::Get().OpenPluginWindow, PluginCommands);
         }
