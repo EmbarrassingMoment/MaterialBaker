@@ -2,19 +2,21 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 #include "Materials/MaterialInterface.h"
-#include "AssetRegistry/AssetData.h" 
+#include "AssetRegistry/AssetData.h"
+// #include "Templates/SharedPointer.h" // 不要なため削除
 
 class FToolBarBuilder;
 class FMenuBuilder;
-class SBox; // SBoxの前方宣言を追加
-class FAssetThumbnailPool; // FAssetThumbnailPoolの前方宣言を追加
+class SBox;
+class FAssetThumbnailPool;
 
+// TSharedFromThis の継承を削除します
 class FMaterialBakerModule : public IModuleInterface
 {
 public:
-
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
@@ -23,10 +25,14 @@ public:
 	void PluginButtonClicked();
 
 private:
-
 	void RegisterMenus();
-
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
+
+	/** Handler for when texture size is changed */
+	void OnTextureSizeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
+
+	/** Generates a widget for a texture size option */
+	TSharedRef<SWidget> MakeWidgetForOption(TSharedPtr<FString> InOption);
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
@@ -39,4 +45,10 @@ private:
 
 	/** Box to hold the thumbnail widget */
 	TSharedPtr<SBox> ThumbnailBox;
+
+	/** Options for texture size dropdown */
+	TArray<TSharedPtr<FString>> TextureSizeOptions;
+
+	/** Currently selected texture size */
+	TSharedPtr<FString> SelectedTextureSize;
 };

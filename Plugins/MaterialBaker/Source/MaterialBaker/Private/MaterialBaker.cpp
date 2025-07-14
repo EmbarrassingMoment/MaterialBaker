@@ -11,9 +11,9 @@
 #include "PropertyCustomizationHelpers.h"
 #include "SMaterialDropTarget.h"
 #include "AssetRegistry/AssetData.h"
-#include "AssetThumbnail.h" 
+#include "AssetThumbnail.h"
 #include "AssetToolsModule.h"
-
+#include "Widgets/Input/SComboBox.h" // SComboBoxのインクルードを追加
 
 static const FName MaterialBakerTabName("MaterialBaker");
 
@@ -21,15 +21,11 @@ static const FName MaterialBakerTabName("MaterialBaker");
 
 void FMaterialBakerModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-
 	FMaterialBakerStyle::Initialize();
 	FMaterialBakerStyle::ReloadTextures();
-
 	FMaterialBakerCommands::Register();
 
 	PluginCommands = MakeShareable(new FUICommandList);
-
 	PluginCommands->MapAction(
 		FMaterialBakerCommands::Get().OpenPluginWindow,
 		FExecuteAction::CreateRaw(this, &FMaterialBakerModule::PluginButtonClicked),
@@ -37,37 +33,35 @@ void FMaterialBakerModule::StartupModule()
 
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMaterialBakerModule::RegisterMenus));
 
-	// サムネイルプールを初期化
 	ThumbnailPool = MakeShareable(new FAssetThumbnailPool(10));
+
+	// テクスチャサイズの選択肢を初期化
+	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("256x256"))));
+	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("512x512"))));
+	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("1024x1024"))));
+	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("2048x2048"))));
+	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("4096x4096"))));
+
+	// デフォルトの選択値を設定 (例: 1024x1024)
+	SelectedTextureSize = TextureSizeOptions[2];
+
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(MaterialBakerTabName, FOnSpawnTab::CreateRaw(this, &FMaterialBakerModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FMaterialBakerTabTitle", "MaterialBaker"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
 }
 
-// (ShutdownModule と OnSpawnPluginTab 以降のコードは変更ありません)
 void FMaterialBakerModule::ShutdownModule()
 {
-    // This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-    // we call this function before unloading the module.
-
-    UToolMenus::UnRegisterStartupCallback(this);
-
-    UToolMenus::UnregisterOwner(this);
-
-    FMaterialBakerStyle::Shutdown();
-
-    FMaterialBakerCommands::Unregister();
-
-    // サムネイルプールを解放
-    ThumbnailPool.Reset();
-
-    FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(MaterialBakerTabName);
-
+	UToolMenus::UnRegisterStartupCallback(this);
+	UToolMenus::UnregisterOwner(this);
+	FMaterialBakerStyle::Shutdown();
+	FMaterialBakerCommands::Unregister();
+	ThumbnailPool.Reset();
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(MaterialBakerTabName);
 }
 
 TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-	// ThumbnailBoxをSAssignNewでメンバ変数に保持
 	SAssignNew(ThumbnailBox, SBox)
 		.WidthOverride(128.f)
 		.HeightOverride(128.f)
@@ -82,6 +76,7 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		];
 
 	TSharedRef<SVerticalBox> WidgetContent = SNew(SVerticalBox)
+		// ... (SMaterialDropTarget と ThumbnailBox の部分は変更なし) ...
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
@@ -89,31 +84,23 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 			SNew(SMaterialDropTarget)
 				.OnMaterialDropped_Lambda([this](UMaterialInterface* Material)
 					{
-						// ドロップされたマテリアルをメンバ変数に保持
 						SelectedMaterial = Material;
-
 						if (ThumbnailBox.IsValid() && SelectedMaterial)
 						{
-							// アセットデータからサムネイルを生成
 							FAssetData AssetData(SelectedMaterial);
 							TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, 128, 128, ThumbnailPool));
-
-							// ThumbnailBoxの中身をサムネイルウィジェットで更新
 							ThumbnailBox->SetContent(Thumbnail->MakeThumbnailWidget());
 						}
 					})
 		]
 
-	// 選択されたマテリアルのサムネイルを表示するウィジェット
 	+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			// 先に生成したThumbnailBoxをレイアウトに追加
 			ThumbnailBox.ToSharedRef()
 		]
 
-		// テクスチャサイズのラベル
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
@@ -122,19 +109,23 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 				.Text(LOCTEXT("TextureSizeLabel", "Bake Texture Size"))
 		]
 
-		// テクスチャサイズを選択するドロップダウン（後で実装）
+		// テクスチャサイズを選択するドロップダウン
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			SNew(SBox)
+			SNew(SComboBox<TSharedPtr<FString>>)
+				.OptionsSource(&TextureSizeOptions)
+				// デリゲートの作成方法を CreateRaw に変更
+				.OnSelectionChanged(SComboBox<TSharedPtr<FString>>::FOnSelectionChanged::CreateRaw(this, &FMaterialBakerModule::OnTextureSizeChanged))
+				.OnGenerateWidget(SComboBox<TSharedPtr<FString>>::FOnGenerateWidget::CreateRaw(this, &FMaterialBakerModule::MakeWidgetForOption))
+				.InitiallySelectedItem(SelectedTextureSize)
 				[
 					SNew(STextBlock)
-						.Text(LOCTEXT("TextureSizeDropdown", " Texture Size Dropdown will go here "))
+						.Text_Lambda([this] { return FText::FromString(*SelectedTextureSize.Get()); })
 				]
 		]
 
-	// ベイク実行ボタン
 	+ SVerticalBox::Slot()
 		.HAlign(HAlign_Right)
 		.Padding(10.0f)
@@ -150,6 +141,20 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		];
 }
 
+void FMaterialBakerModule::OnTextureSizeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
+{
+	if (NewSelection.IsValid())
+	{
+		SelectedTextureSize = NewSelection;
+		// 選択が変更されたことをログに出力（デバッグ用）
+		UE_LOG(LogTemp, Log, TEXT("Selected Texture Size: %s"), **NewSelection);
+	}
+}
+
+TSharedRef<SWidget> FMaterialBakerModule::MakeWidgetForOption(TSharedPtr<FString> InOption)
+{
+	return SNew(STextBlock).Text(FText::FromString(*InOption));
+}
 
 void FMaterialBakerModule::PluginButtonClicked()
 {
@@ -158,9 +163,7 @@ void FMaterialBakerModule::PluginButtonClicked()
 
 void FMaterialBakerModule::RegisterMenus()
 {
-	// Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
 	FToolMenuOwnerScoped OwnerScoped(this);
-
 	{
 		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Tools");
 		{
@@ -171,5 +174,5 @@ void FMaterialBakerModule::RegisterMenus()
 }
 
 #undef LOCTEXT_NAMESPACE
-	
+
 IMPLEMENT_MODULE(FMaterialBakerModule, MaterialBaker)
