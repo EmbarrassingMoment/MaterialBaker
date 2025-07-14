@@ -13,7 +13,7 @@
 #include "AssetRegistry/AssetData.h"
 #include "AssetThumbnail.h"
 #include "AssetToolsModule.h"
-#include "Widgets/Input/SComboBox.h" // SComboBoxのインクルードを追加
+#include "Widgets/Input/SComboBox.h"
 
 static const FName MaterialBakerTabName("MaterialBaker");
 
@@ -36,14 +36,17 @@ void FMaterialBakerModule::StartupModule()
 	ThumbnailPool = MakeShareable(new FAssetThumbnailPool(10));
 
 	// テクスチャサイズの選択肢を初期化
+	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("32x32"))));
+	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("64x64"))));
+	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("128x128"))));
 	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("256x256"))));
 	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("512x512"))));
 	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("1024x1024"))));
 	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("2048x2048"))));
-	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("4096x4096"))));
 
-	// デフォルトの選択値を設定 (例: 1024x1024)
-	SelectedTextureSize = TextureSizeOptions[2];
+
+	// デフォルトの選択値を設定 (32x32)
+	SelectedTextureSize = TextureSizeOptions[0];
 
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(MaterialBakerTabName, FOnSpawnTab::CreateRaw(this, &FMaterialBakerModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FMaterialBakerTabTitle", "MaterialBaker"))
