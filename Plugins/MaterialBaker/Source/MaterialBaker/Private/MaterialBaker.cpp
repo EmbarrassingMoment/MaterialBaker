@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 kurorekish. All Rights Reserved.
 
 #include "MaterialBaker.h"
 #include "MaterialBakerStyle.h"
@@ -20,6 +20,7 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Factories/TextureFactory.h"
 #include "Misc/FileHelper.h"
+#include "Editor.h"
 
 static const FName MaterialBakerTabName("MaterialBaker");
 
@@ -149,6 +150,91 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 			WidgetContent
 		];
 }
+
+bool FMaterialBakerModule::ParseTextureSize(const FString& SizeString, FIntPoint& OutSize)
+{
+	TArray<FString> Parts;
+	SizeString.ParseIntoArray(Parts, TEXT("x"), true);
+
+	if (Parts.Num() == 2)
+	{
+		OutSize.X = FCString::Atoi(*Parts[0]);
+		OutSize.Y = FCString::Atoi(*Parts[1]);
+		return true;
+	}
+
+	return false;
+}
+
+FReply FMaterialBakerModule::OnBakeButtonClicked()
+{
+	if (!SelectedMaterial)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No material selected!"));
+		return FReply::Handled();
+	}
+
+	FIntPoint TextureSize;
+	if (!ParseTextureSize(*SelectedTextureSize, TextureSize))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid texture size format!"));
+		return FReply::Handled();
+	}
+
+	UWorld* World = GEditor->GetEditorWorldContext().World();
+	if (!World)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot get world context!"));
+		return FReply::Handled();
+	}
+
+	// 1. Render Targetの作成
+	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>();
+	RenderTarget->InitAutoFormat(TextureSize.X, TextureSize.Y);
+	RenderTarget->UpdateResourceImmediate(true);
+
+	// 2. マテリアルをRender Targetに描画
+	UKismetRenderingLibrary::DrawMaterialToRenderTarget(World, RenderTarget, SelectedMaterial);
+
+	// 3. テクスチャアセットの作成
+	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
+	FString PackageName = TEXT("/Game/BakedTextures/");
+	FString AssetName = FString::Printf(TEXT("%s_Baked"), *SelectedMaterial->GetName());
+
+	FString UniquePackageName;
+	FString UniqueAssetName;
+
+	AssetToolsModule.Get().CreateUniqueAssetName(PackageName + AssetName, TEXT(""), UniquePackageName, UniqueAssetName);
+
+	UPackage* Package = CreatePackage(*UniquePackageName);
+	Package->FullyLoad();
+
+	UTexture2D* NewTexture = NewObject<UTexture2D>(Package, *UniqueAssetName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
+	NewTexture->AddToRoot();
+
+	// Render Targetからピクセルデータを読み込み、新しいテクスチャにコピー
+	FRenderTarget* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
+	TArray<FColor> RawPixels;
+	if (RenderTargetResource->ReadPixels(RawPixels))
+	{
+		void* MipData = NewTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+		FMemory::Memcpy(MipData, RawPixels.GetData(), RawPixels.Num() * sizeof(FColor));
+		NewTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
+
+		NewTexture->Source.Init(TextureSize.X, TextureSize.Y, 1, 1, TSF_BGRA8, (const uint8*)RawPixels.GetData());
+		NewTexture->UpdateResource();
+
+		Package->MarkPackageDirty();
+		FAssetRegistryModule::GetRegistry().AssetCreated(NewTexture);
+		NewTexture->PostEditChange();
+	}
+
+	NewTexture->RemoveFromRoot();
+	RenderTarget->RemoveFromRoot();
+
+	return FReply::Handled();
+}
+
 
 void FMaterialBakerModule::OnTextureSizeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
 {

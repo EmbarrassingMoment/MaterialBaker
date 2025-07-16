@@ -33,10 +33,10 @@ private:
 	TSharedRef<SWidget> MakeWidgetForOption(TSharedPtr<FString> InOption);
 
 	/** Handler for when the bake button is clicked */
-	FReply OnBakeButtonClicked(); //
+	FReply OnBakeButtonClicked(); 
 
 	/** Parses the texture size string (e.g., "1024x1024") into FIntPoint */
-	bool ParseTextureSize(const FString& SizeString, FIntPoint& OutSize); //
+	bool ParseTextureSize(const FString& SizeString, FIntPoint& OutSize); 
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;

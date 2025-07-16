@@ -1,3 +1,5 @@
+// Copyright 2025 kurorekish. All Rights Reserved.
+
 #include "SMaterialDropTarget.h"
 #include "Widgets/Text/STextBlock.h"
 #include "DragAndDrop/AssetDragDropOp.h"

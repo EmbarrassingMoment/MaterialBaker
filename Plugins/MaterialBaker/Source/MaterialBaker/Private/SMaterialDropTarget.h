@@ -1,3 +1,5 @@
+// Copyright 2025 kurorekish. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
