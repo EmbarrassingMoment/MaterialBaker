@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 kurorekish. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -47,6 +47,8 @@ public class MaterialBaker : ModuleRules
                 "ContentBrowser",
                 "AssetRegistry",
                 "AssetTools",
+                "RHI",
+				"RenderCore",  
                                // ... add private dependencies that you statically link with here ...
              }
          );

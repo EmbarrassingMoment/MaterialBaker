@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 kurorekish. All Rights Reserved.
 
 #pragma once
 
@@ -6,14 +6,12 @@
 #include "Modules/ModuleManager.h"
 #include "Materials/MaterialInterface.h"
 #include "AssetRegistry/AssetData.h"
-// #include "Templates/SharedPointer.h" // ïsóvÇ»ÇΩÇﬂçÌèú
 
 class FToolBarBuilder;
 class FMenuBuilder;
 class SBox;
 class FAssetThumbnailPool;
 
-// TSharedFromThis ÇÃåpè≥ÇçÌèúÇµÇ‹Ç∑
 class FMaterialBakerModule : public IModuleInterface
 {
 public:
@@ -33,6 +31,12 @@ private:
 
 	/** Generates a widget for a texture size option */
 	TSharedRef<SWidget> MakeWidgetForOption(TSharedPtr<FString> InOption);
+
+	/** Handler for when the bake button is clicked */
+	FReply OnBakeButtonClicked(); //
+
+	/** Parses the texture size string (e.g., "1024x1024") into FIntPoint */
+	bool ParseTextureSize(const FString& SizeString, FIntPoint& OutSize); //
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;

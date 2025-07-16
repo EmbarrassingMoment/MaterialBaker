@@ -14,6 +14,12 @@
 #include "AssetThumbnail.h"
 #include "AssetToolsModule.h"
 #include "Widgets/Input/SComboBox.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Kismet/KismetRenderingLibrary.h"
+#include "IAssetTools.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "Factories/TextureFactory.h"
+#include "Misc/FileHelper.h"
 
 static const FName MaterialBakerTabName("MaterialBaker");
 
