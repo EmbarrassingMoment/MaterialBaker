@@ -86,7 +86,6 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		];
 
 	TSharedRef<SVerticalBox> WidgetContent = SNew(SVerticalBox)
-		// ... (SMaterialDropTarget と ThumbnailBox の部分は変更なし) ...
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
@@ -119,14 +118,12 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 				.Text(LOCTEXT("TextureSizeLabel", "Bake Texture Size"))
 		]
 
-		// テクスチャサイズを選択するドロップダウン
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
 			SNew(SComboBox<TSharedPtr<FString>>)
 				.OptionsSource(&TextureSizeOptions)
-				// デリゲートの作成方法を CreateRaw に変更
 				.OnSelectionChanged(SComboBox<TSharedPtr<FString>>::FOnSelectionChanged::CreateRaw(this, &FMaterialBakerModule::OnTextureSizeChanged))
 				.OnGenerateWidget(SComboBox<TSharedPtr<FString>>::FOnGenerateWidget::CreateRaw(this, &FMaterialBakerModule::MakeWidgetForOption))
 				.InitiallySelectedItem(SelectedTextureSize)
@@ -142,6 +139,7 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		[
 			SNew(SButton)
 				.Text(LOCTEXT("BakeButton", "Bake Material"))
+				.OnClicked(FOnClicked::CreateRaw(this, &FMaterialBakerModule::OnBakeButtonClicked))
 		];
 
 	return SNew(SDockTab)
@@ -190,6 +188,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 
 	// 1. Render Targetの作成
 	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>();
+	RenderTarget->AddToRoot(); // GCに回収されないようにルートに追加
 	RenderTarget->InitAutoFormat(TextureSize.X, TextureSize.Y);
 	RenderTarget->UpdateResourceImmediate(true);
 
@@ -197,14 +196,14 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	UKismetRenderingLibrary::DrawMaterialToRenderTarget(World, RenderTarget, SelectedMaterial);
 
 	// 3. テクスチャアセットの作成
-	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
-	FString PackageName = TEXT("/Game/BakedTextures/");
+	FAssetData SelectedMaterialAssetData(SelectedMaterial);
+	FString PackagePath = SelectedMaterialAssetData.PackagePath.ToString();
 	FString AssetName = FString::Printf(TEXT("%s_Baked"), *SelectedMaterial->GetName());
 
+	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
 	FString UniquePackageName;
 	FString UniqueAssetName;
-
-	AssetToolsModule.Get().CreateUniqueAssetName(PackageName + AssetName, TEXT(""), UniquePackageName, UniqueAssetName);
+	AssetToolsModule.Get().CreateUniqueAssetName(PackagePath / AssetName, TEXT(""), UniquePackageName, UniqueAssetName);
 
 	UPackage* Package = CreatePackage(*UniquePackageName);
 	Package->FullyLoad();
@@ -212,15 +211,12 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	UTexture2D* NewTexture = NewObject<UTexture2D>(Package, *UniqueAssetName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
 	NewTexture->AddToRoot();
 
-	// Render Targetからピクセルデータを読み込み、新しいテクスチャにコピー
+	// Render Targetからピクセルデータを読み込み
 	FRenderTarget* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
 	TArray<FColor> RawPixels;
 	if (RenderTargetResource->ReadPixels(RawPixels))
 	{
-		void* MipData = NewTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-		FMemory::Memcpy(MipData, RawPixels.GetData(), RawPixels.Num() * sizeof(FColor));
-		NewTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
-
+		// ソースデータを設定してテクスチャを更新 (安全な方法)
 		NewTexture->Source.Init(TextureSize.X, TextureSize.Y, 1, 1, TSF_BGRA8, (const uint8*)RawPixels.GetData());
 		NewTexture->UpdateResource();
 
@@ -241,8 +237,6 @@ void FMaterialBakerModule::OnTextureSizeChanged(TSharedPtr<FString> NewSelection
 	if (NewSelection.IsValid())
 	{
 		SelectedTextureSize = NewSelection;
-		// 選択が変更されたことをログに出力（デバッグ用）
-		UE_LOG(LogTemp, Log, TEXT("Selected Texture Size: %s"), **NewSelection);
 	}
 }
 
