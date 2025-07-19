@@ -11,6 +11,7 @@ class FToolBarBuilder;
 class FMenuBuilder;
 class SBox;
 class FAssetThumbnailPool;
+class SEditableTextBox;
 
 class FMaterialBakerModule : public IModuleInterface
 {
@@ -33,10 +34,10 @@ private:
 	TSharedRef<SWidget> MakeWidgetForOption(TSharedPtr<FString> InOption);
 
 	/** Handler for when the bake button is clicked */
-	FReply OnBakeButtonClicked(); 
+	FReply OnBakeButtonClicked();
 
 	/** Parses the texture size string (e.g., "1024x1024") into FIntPoint */
-	bool ParseTextureSize(const FString& SizeString, FIntPoint& OutSize); 
+	bool ParseTextureSize(const FString& SizeString, FIntPoint& OutSize);
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
@@ -49,6 +50,12 @@ private:
 
 	/** Box to hold the thumbnail widget */
 	TSharedPtr<SBox> ThumbnailBox;
+
+	/** Text box for custom baked name */
+	TSharedPtr<SEditableTextBox> BakedNameTextBox;
+
+	/** Custom name for the baked texture */
+	FString CustomBakedName;
 
 	/** Options for texture size dropdown */
 	TArray<TSharedPtr<FString>> TextureSizeOptions;
