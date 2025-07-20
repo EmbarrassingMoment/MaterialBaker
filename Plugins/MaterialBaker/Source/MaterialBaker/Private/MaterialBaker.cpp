@@ -14,7 +14,6 @@
 #include "AssetThumbnail.h"
 #include "AssetToolsModule.h"
 #include "Widgets/Input/SComboBox.h"
-#include "Widgets/Input/SEditableTextBox.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Kismet/KismetRenderingLibrary.h"
 #include "IAssetTools.h"
@@ -135,26 +134,6 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		]
 
 	+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(5.0f)
-		[
-			SNew(STextBlock)
-				.Text(LOCTEXT("BakedNameLabel", "Baked Texture Name"))
-		]
-
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(5.0f)
-		[
-			SAssignNew(BakedNameTextBox, SEditableTextBox)
-				.HintText(LOCTEXT("BakedNameHint", "Enter custom name (optional)"))
-				.OnTextChanged_Lambda([this](const FText& InText)
-					{
-						CustomBakedName = InText.ToString();
-					})
-		]
-
-	+ SVerticalBox::Slot()
 		.HAlign(HAlign_Right)
 		.Padding(10.0f)
 		[
@@ -210,25 +189,18 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	// 1. Render Targetの作成
 	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>();
 	RenderTarget->AddToRoot(); // GCに回収されないようにルートに追加
-	RenderTarget->InitAutoFormat(TextureSize.X, TextureSize.Y);
+
+	RenderTarget->RenderTargetFormat = RTF_RGBA16f;
+	RenderTarget->InitCustomFormat(TextureSize.X, TextureSize.Y, PF_FloatRGBA, true);
+
 	RenderTarget->UpdateResourceImmediate(true);
 
 	// 2. マテリアルをRender Targetに描画
 	UKismetRenderingLibrary::DrawMaterialToRenderTarget(World, RenderTarget, SelectedMaterial);
 
-	// 3. テクスチャアセットの作成
 	FAssetData SelectedMaterialAssetData(SelectedMaterial);
 	FString PackagePath = SelectedMaterialAssetData.PackagePath.ToString();
-	FString AssetName;
-	if (!CustomBakedName.IsEmpty())
-	{
-		AssetName = CustomBakedName;
-	}
-	else
-	{
-		AssetName = FString::Printf(TEXT("%s_Baked"), *SelectedMaterial->GetName());
-	}
-
+	FString AssetName = FString::Printf(TEXT("%s_Baked"), *SelectedMaterial->GetName());
 
 	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
 	FString UniquePackageName;
@@ -240,6 +212,10 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 
 	UTexture2D* NewTexture = NewObject<UTexture2D>(Package, *UniqueAssetName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
 	NewTexture->AddToRoot();
+
+	NewTexture->CompressionSettings = TC_Grayscale;
+	NewTexture->SRGB = false;
+
 
 	// Render Targetからピクセルデータを読み込み
 	FRenderTarget* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
