@@ -39,6 +39,9 @@ private:
 	/** Parses the texture size string (e.g., "1024x1024") into FIntPoint */
 	bool ParseTextureSize(const FString& SizeString, FIntPoint& OutSize);
 
+	/** Handler for when the custom baked name is changed */
+	void OnBakedNameTextChanged(const FText& InText);
+
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
 

@@ -14,6 +14,7 @@
 #include "AssetThumbnail.h"
 #include "AssetToolsModule.h"
 #include "Widgets/Input/SComboBox.h"
+#include "Widgets/Input/SEditableTextBox.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Kismet/KismetRenderingLibrary.h"
 #include "IAssetTools.h"
@@ -99,6 +100,13 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 							FAssetData AssetData(SelectedMaterial);
 							TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, 128, 128, ThumbnailPool));
 							ThumbnailBox->SetContent(Thumbnail->MakeThumbnailWidget());
+
+							// マテリアルがドロップされたら、デフォルトのベイク名を更新
+							if (BakedNameTextBox.IsValid())
+							{
+								CustomBakedName = FString::Printf(TEXT("%s_Baked"), *SelectedMaterial->GetName());
+								BakedNameTextBox->SetText(FText::FromString(CustomBakedName));
+							}
 						}
 					})
 		]
@@ -108,6 +116,23 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		.Padding(5.0f)
 		[
 			ThumbnailBox.ToSharedRef()
+		]
+
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(STextBlock)
+				.Text(LOCTEXT("BakedNameLabel", "Baked Texture Name"))
+		]
+
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SAssignNew(BakedNameTextBox, SEditableTextBox)
+				.HintText(LOCTEXT("BakedNameHint", "Enter baked texture name..."))
+				.OnTextChanged(FOnTextChanged::CreateRaw(this, &FMaterialBakerModule::OnBakedNameTextChanged))
 		]
 
 		+ SVerticalBox::Slot()
@@ -149,6 +174,12 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		];
 }
 
+void FMaterialBakerModule::OnBakedNameTextChanged(const FText& InText)
+{
+	CustomBakedName = InText.ToString();
+}
+
+
 bool FMaterialBakerModule::ParseTextureSize(const FString& SizeString, FIntPoint& OutSize)
 {
 	TArray<FString> Parts;
@@ -171,6 +202,13 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 		UE_LOG(LogTemp, Warning, TEXT("No material selected!"));
 		return FReply::Handled();
 	}
+
+	if (CustomBakedName.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Baked texture name is empty!"));
+		return FReply::Handled();
+	}
+
 
 	FIntPoint TextureSize;
 	if (!ParseTextureSize(*SelectedTextureSize, TextureSize))
@@ -200,7 +238,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 
 	FAssetData SelectedMaterialAssetData(SelectedMaterial);
 	FString PackagePath = SelectedMaterialAssetData.PackagePath.ToString();
-	FString AssetName = FString::Printf(TEXT("%s_Baked"), *SelectedMaterial->GetName());
+	FString AssetName = CustomBakedName; // カスタム名を使用
 
 	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
 	FString UniquePackageName;
