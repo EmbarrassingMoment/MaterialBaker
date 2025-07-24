@@ -48,7 +48,8 @@ public class MaterialBaker : ModuleRules
                 "AssetRegistry",
                 "AssetTools",
                 "RHI",
-				"RenderCore",  
+				"RenderCore",
+                "PropertyEditor",
                                // ... add private dependencies that you statically link with here ...
              }
          );
