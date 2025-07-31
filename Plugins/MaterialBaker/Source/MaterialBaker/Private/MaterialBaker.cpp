@@ -75,8 +75,8 @@ void FMaterialBakerModule::ShutdownModule()
 TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
 	SAssignNew(ThumbnailBox, SBox)
-		.WidthOverride(128.f)
-		.HeightOverride(128.f)
+		.WidthOverride(64.f)
+		.HeightOverride(64.f)
 		[
 			SNew(SBorder)
 				.Padding(4.f)
@@ -97,27 +97,36 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 				.Text(LOCTEXT("SelectMaterialLabel", "Target Material"))
 		]
 
-		+ SVerticalBox::Slot()
+		// ★★★ UI変更箇所 ★★★
+		// サムネイルとマテリアル選択欄の底辺を揃える
+		+SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			// SObjectPropertyEntryBox を使用してアセットピッカーを作成
-			SNew(SObjectPropertyEntryBox)
-				.AllowedClass(UMaterialInterface::StaticClass()) // 選択をマテリアルインターフェースに限定
-				// ★★★ 修正点1: CreateRaw を使用 ★★★
-				.OnObjectChanged(FOnSetObject::CreateRaw(this, &FMaterialBakerModule::OnMaterialChanged)) // アセット変更時のハンドラ
-				.ObjectPath_Lambda([this]() -> FString { // 現在選択中のアセットをUIに表示
-				return SelectedMaterial ? SelectedMaterial->GetPathName() : FString("");
-					})
+			SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(0.0f, 0.0f, 5.0f, 0.0f)
+				.VAlign(VAlign_Bottom) // 底辺を揃える
+				[
+					ThumbnailBox.ToSharedRef()
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.0f)
+				.VAlign(VAlign_Bottom) // 底辺を揃える
+				[
+					// SObjectPropertyEntryBox を使用してアセットピッカーを作成
+					SNew(SObjectPropertyEntryBox)
+						.AllowedClass(UMaterialInterface::StaticClass()) // 選択をマテリアルインターフェースに限定
+						.OnObjectChanged(FOnSetObject::CreateRaw(this, &FMaterialBakerModule::OnMaterialChanged)) // アセット変更時のハンドラ
+						.ObjectPath_Lambda([this]() -> FString { // 現在選択中のアセットをUIに表示
+						return SelectedMaterial ? SelectedMaterial->GetPathName() : FString("");
+							})
+				]
 		]
+	// ★★★ここまで★★★
 
 	+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(5.0f)
-		[
-			ThumbnailBox.ToSharedRef()
-		]
-		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
@@ -130,7 +139,6 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		[
 			SNew(SEditableTextBox)
 				.HintText(LOCTEXT("BakedNameHint", "Enter baked texture name"))
-				// ★★★ 修正点2: CreateRaw を使用 ★★★
 				.OnTextChanged(FOnTextChanged::CreateRaw(this, &FMaterialBakerModule::OnBakedNameTextChanged))
 		]
 		+ SVerticalBox::Slot()
@@ -182,7 +190,7 @@ void FMaterialBakerModule::OnMaterialChanged(const FAssetData& AssetData)
 	if (ThumbnailBox.IsValid() && SelectedMaterial)
 	{
 		// 選択されたアセットのサムネイルを更新
-		TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, 128, 128, ThumbnailPool));
+		TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, 64, 64, ThumbnailPool));
 		ThumbnailBox->SetContent(Thumbnail->MakeThumbnailWidget());
 	}
 	else if (ThumbnailBox.IsValid())
