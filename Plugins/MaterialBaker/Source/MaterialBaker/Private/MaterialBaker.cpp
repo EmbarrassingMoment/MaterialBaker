@@ -22,7 +22,7 @@
 #include "Factories/TextureFactory.h"
 #include "Misc/FileHelper.h"
 #include "Editor.h"
-#include "PropertyCustomizationHelpers.h"
+#include "Misc/ScopedSlowTask.h"
 
 static const FName MaterialBakerTabName("MaterialBaker");
 
@@ -258,21 +258,29 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 		return FReply::Handled();
 	}
 
-	// 1. Render Targetの作成
+	const int32 TotalSteps = 5; // 処理の総ステップ数
+	FScopedSlowTask SlowTask(TotalSteps, LOCTEXT("BakingMaterial", "Baking Material..."));
+	SlowTask.MakeDialog(); // プログレスバーのダイアログを表示
+
+	// ステップ1: Render Targetの作成
+	SlowTask.EnterProgressFrame(1, LOCTEXT("CreateRenderTarget", "Step 1/5: Creating Render Target..."));
+
 	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>();
-	RenderTarget->AddToRoot(); // GCに回収されないようにルートに追加
+	RenderTarget->AddToRoot();
 
 	RenderTarget->RenderTargetFormat = RTF_RGBA16f;
 	RenderTarget->InitCustomFormat(TextureSize.X, TextureSize.Y, PF_FloatRGBA, true);
-
 	RenderTarget->UpdateResourceImmediate(true);
 
-	// 2. マテリアルをRender Targetに描画
+	// ステップ2: マテリアルを描画
+	SlowTask.EnterProgressFrame(1, LOCTEXT("DrawMaterial", "Step 2/5: Drawing Material..."));
 	UKismetRenderingLibrary::DrawMaterialToRenderTarget(World, RenderTarget, SelectedMaterial);
 
+	// ステップ3: アセットの作成準備
+	SlowTask.EnterProgressFrame(1, LOCTEXT("PrepareAsset", "Step 3/5: Preparing Asset..."));
 	FAssetData SelectedMaterialAssetData(SelectedMaterial);
 	FString PackagePath = SelectedMaterialAssetData.PackagePath.ToString();
-	FString AssetName = CustomBakedName; // カスタム名を使用
+	FString AssetName = CustomBakedName;
 
 	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
 	FString UniquePackageName;
@@ -289,12 +297,15 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	NewTexture->SRGB = false;
 
 
-	// Render Targetからピクセルデータを読み込み
+	// ステップ4: ピクセルデータを読み込み
+	SlowTask.EnterProgressFrame(1, LOCTEXT("ReadPixels", "Step 4/5: Reading Pixels..."));
 	FRenderTarget* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
 	TArray<FColor> RawPixels;
 	if (RenderTargetResource->ReadPixels(RawPixels))
 	{
-		// ソースデータを設定してテクスチャを更新 (安全な方法)
+		// ステップ5: テクスチャを更新して保存
+		SlowTask.EnterProgressFrame(1, LOCTEXT("UpdateTexture", "Step 5/5: Updating and Saving Texture..."));
+
 		NewTexture->Source.Init(TextureSize.X, TextureSize.Y, 1, 1, TSF_BGRA8, (const uint8*)RawPixels.GetData());
 		NewTexture->UpdateResource();
 
@@ -305,6 +316,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 
 	NewTexture->RemoveFromRoot();
 	RenderTarget->RemoveFromRoot();
+
 
 	return FReply::Handled();
 }
