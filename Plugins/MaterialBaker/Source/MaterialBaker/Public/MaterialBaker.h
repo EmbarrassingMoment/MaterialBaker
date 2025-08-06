@@ -44,6 +44,9 @@ private:
 	/** Handler for when baked name text changes */
 	void OnBakedNameTextChanged(const FText& InText);
 
+	/** Handler for when sRGB checkbox changes */
+	void OnSRGBCheckBoxChanged(ECheckBoxState NewState);
+
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
@@ -65,4 +68,7 @@ private:
 
 	/** Custom name for the baked texture */
 	FString CustomBakedName;
+
+	/** Whether to enable sRGB for the baked texture */
+	bool bSRGBEnabled = false;
 };

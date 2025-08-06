@@ -23,6 +23,7 @@
 #include "Misc/FileHelper.h"
 #include "Editor.h"
 #include "Misc/ScopedSlowTask.h"
+#include "Widgets/Input/SCheckBox.h" // SCheckBoxのインクルードを追加
 
 static const FName MaterialBakerTabName("MaterialBaker");
 
@@ -56,6 +57,9 @@ void FMaterialBakerModule::StartupModule()
 
 	// デフォルトの選択値を設定 (32x32)
 	SelectedTextureSize = TextureSizeOptions[0];
+
+	// sRGBのデフォルト値を設定
+	bSRGBEnabled = false;
 
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(MaterialBakerTabName, FOnSpawnTab::CreateRaw(this, &FMaterialBakerModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FMaterialBakerTabTitle", "MaterialBaker"))
@@ -164,6 +168,31 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 				]
 		]
 
+	// ★★★ sRGBチェックボックスを追加 ★★★
+	+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				[
+					SNew(SCheckBox)
+						.IsChecked_Lambda([this]() -> ECheckBoxState { return bSRGBEnabled ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+						.OnCheckStateChanged(FOnCheckStateChanged::CreateRaw(this, &FMaterialBakerModule::OnSRGBCheckBoxChanged))
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				.Padding(FMargin(5.0f, 0.0f, 0.0f, 0.0f))
+				[
+					SNew(STextBlock)
+						.Text(LOCTEXT("sRGBLabel", "sRGB"))
+				]
+		]
+	// ★★★ここまで★★★
+
 	+ SVerticalBox::Slot()
 		.HAlign(HAlign_Right)
 		.Padding(10.0f)
@@ -211,6 +240,11 @@ void FMaterialBakerModule::OnMaterialChanged(const FAssetData& AssetData)
 void FMaterialBakerModule::OnBakedNameTextChanged(const FText& InText)
 {
 	CustomBakedName = InText.ToString();
+}
+
+void FMaterialBakerModule::OnSRGBCheckBoxChanged(ECheckBoxState NewState)
+{
+	bSRGBEnabled = (NewState == ECheckBoxState::Checked);
 }
 
 
@@ -294,7 +328,8 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	NewTexture->AddToRoot();
 
 	NewTexture->CompressionSettings = TC_Grayscale;
-	NewTexture->SRGB = false;
+
+	NewTexture->SRGB = bSRGBEnabled;
 
 
 	// ステップ4: ピクセルデータを読み込み
