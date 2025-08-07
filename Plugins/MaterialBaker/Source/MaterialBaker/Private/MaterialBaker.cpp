@@ -23,7 +23,7 @@
 #include "Misc/FileHelper.h"
 #include "Editor.h"
 #include "Misc/ScopedSlowTask.h"
-#include "Widgets/Input/SCheckBox.h" // SCheckBoxのインクルードを追加
+#include "Widgets/Input/SCheckBox.h"
 
 static const FName MaterialBakerTabName("MaterialBaker");
 
@@ -100,8 +100,6 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 			SNew(STextBlock)
 				.Text(LOCTEXT("SelectMaterialLabel", "Target Material"))
 		]
-
-		// ★★★ UI変更箇所 ★★★
 		// サムネイルとマテリアル選択欄の底辺を揃える
 		+SVerticalBox::Slot()
 		.AutoHeight()
@@ -128,8 +126,6 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 							})
 				]
 		]
-	// ★★★ここまで★★★
-
 	+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
@@ -167,8 +163,6 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 						.Text_Lambda([this] { return FText::FromString(*SelectedTextureSize.Get()); })
 				]
 		]
-
-	// ★★★ sRGBチェックボックスを追加 ★★★
 	+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
@@ -191,8 +185,6 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 						.Text(LOCTEXT("sRGBLabel", "sRGB"))
 				]
 		]
-	// ★★★ここまで★★★
-
 	+ SVerticalBox::Slot()
 		.HAlign(HAlign_Right)
 		.Padding(10.0f)
@@ -303,6 +295,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	RenderTarget->AddToRoot();
 
 	RenderTarget->RenderTargetFormat = RTF_RGBA16f;
+	// PF_FloatRGBAを指定し、ガンマはリニアに強制
 	RenderTarget->InitCustomFormat(TextureSize.X, TextureSize.Y, PF_FloatRGBA, true);
 	RenderTarget->UpdateResourceImmediate(true);
 
@@ -327,21 +320,23 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	UTexture2D* NewTexture = NewObject<UTexture2D>(Package, *UniqueAssetName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
 	NewTexture->AddToRoot();
 
-	NewTexture->CompressionSettings = TC_Grayscale;
-
+	// 16bit浮動小数点数テクスチャにはHDR圧縮を使用
+	NewTexture->CompressionSettings = TC_HDR;
+	// UIのチェックボックスに基づいてsRGBを設定 (リニアデータを保持する場合はfalseを推奨)
 	NewTexture->SRGB = bSRGBEnabled;
 
 
 	// ステップ4: ピクセルデータを読み込み
 	SlowTask.EnterProgressFrame(1, LOCTEXT("ReadPixels", "Step 4/5: Reading Pixels..."));
 	FRenderTarget* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
-	TArray<FColor> RawPixels;
-	if (RenderTargetResource->ReadPixels(RawPixels))
+
+	TArray<FFloat16Color> RawPixels;
+	if (RenderTargetResource->ReadFloat16Pixels(RawPixels))
 	{
 		// ステップ5: テクスチャを更新して保存
 		SlowTask.EnterProgressFrame(1, LOCTEXT("UpdateTexture", "Step 5/5: Updating and Saving Texture..."));
 
-		NewTexture->Source.Init(TextureSize.X, TextureSize.Y, 1, 1, TSF_BGRA8, (const uint8*)RawPixels.GetData());
+		NewTexture->Source.Init(TextureSize.X, TextureSize.Y, 1, 1, TSF_RGBA16F, (const uint8*)RawPixels.GetData());
 		NewTexture->UpdateResource();
 
 		Package->MarkPackageDirty();
