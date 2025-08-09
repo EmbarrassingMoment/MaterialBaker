@@ -24,6 +24,7 @@
 #include "Editor.h"
 #include "Misc/ScopedSlowTask.h"
 #include "Widgets/Input/SCheckBox.h"
+#include "RenderCore.h"
 
 static const FName MaterialBakerTabName("MaterialBaker");
 
@@ -101,7 +102,7 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 				.Text(LOCTEXT("SelectMaterialLabel", "Target Material"))
 		]
 		// サムネイルとマテリアル選択欄の底辺を揃える
-		+SVerticalBox::Slot()
+		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
@@ -302,6 +303,9 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	// ステップ2: マテリアルを描画
 	SlowTask.EnterProgressFrame(1, LOCTEXT("DrawMaterial", "Step 2/5: Drawing Material..."));
 	UKismetRenderingLibrary::DrawMaterialToRenderTarget(World, RenderTarget, SelectedMaterial);
+
+	// レンダリングコマンドをフラッシュして、描画が完了するのを待つ
+	FlushRenderingCommands();
 
 	// ステップ3: アセットの作成準備
 	SlowTask.EnterProgressFrame(1, LOCTEXT("PrepareAsset", "Step 3/5: Preparing Asset..."));
