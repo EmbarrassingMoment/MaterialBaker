@@ -25,6 +25,7 @@
 #include "Misc/ScopedSlowTask.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "RenderCore.h"
+#include "Misc/MessageDialog.h" // ダイアログ表示のために追加
 
 static const FName MaterialBakerTabName("MaterialBaker");
 
@@ -266,7 +267,8 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 
 	if (CustomBakedName.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Baked texture name is empty!"));
+		// テクスチャ名が空の場合、ダイアログを表示
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("EmptyNameWarning", "Please enter a name for the baked texture."));
 		return FReply::Handled();
 	}
 
