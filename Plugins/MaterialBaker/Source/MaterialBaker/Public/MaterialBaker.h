@@ -6,6 +6,7 @@
 #include "Modules/ModuleManager.h"
 #include "Materials/MaterialInterface.h"
 #include "AssetRegistry/AssetData.h"
+#include "Engine/Texture.h" // ETextureCompressionSettings を使用するためにインクルード
 
 class FToolBarBuilder;
 class FMenuBuilder;
@@ -31,6 +32,12 @@ private:
 
 	/** Generates a widget for a texture size option */
 	TSharedRef<SWidget> MakeWidgetForOption(TSharedPtr<FString> InOption);
+
+	/** Handler for when compression setting is changed */
+	void OnCompressionSettingChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
+
+	/** Generates a widget for a compression setting option */
+	TSharedRef<SWidget> MakeWidgetForCompressionOption(TSharedPtr<FString> InOption);
 
 	/** Handler for when the bake button is clicked */
 	FReply OnBakeButtonClicked();
@@ -65,6 +72,12 @@ private:
 
 	/** Currently selected texture size */
 	TSharedPtr<FString> SelectedTextureSize;
+
+	/** Options for compression setting dropdown */
+	TArray<TSharedPtr<FString>> CompressionSettingOptions;
+
+	/** Currently selected compression setting */
+	TSharedPtr<FString> SelectedCompressionSetting;
 
 	/** Custom name for the baked texture */
 	FString CustomBakedName;

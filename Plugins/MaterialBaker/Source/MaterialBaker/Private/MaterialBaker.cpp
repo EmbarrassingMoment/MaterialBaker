@@ -25,7 +25,11 @@
 #include "Misc/ScopedSlowTask.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "RenderCore.h"
-#include "Misc/MessageDialog.h" // ダイアログ表示のために追加
+#include "Misc/MessageDialog.h"
+#include "Engine/Texture.h"
+#include "UObject/EnumProperty.h"
+
+
 
 static const FName MaterialBakerTabName("MaterialBaker");
 
@@ -59,6 +63,22 @@ void FMaterialBakerModule::StartupModule()
 
 	// デフォルトの選択値を設定 (32x32)
 	SelectedTextureSize = TextureSizeOptions[0];
+
+	// 圧縮設定の選択肢を初期化
+	const UEnum* CompressionSettingsEnum = StaticEnum<TextureCompressionSettings>();
+	if (CompressionSettingsEnum)
+	{
+		for (int32 i = 0; i < CompressionSettingsEnum->NumEnums() - 1; ++i)
+		{
+			CompressionSettingOptions.Add(MakeShareable(new FString(CompressionSettingsEnum->GetDisplayNameTextByIndex(i).ToString())));
+		}
+	}
+	// デフォルトの圧縮設定
+	if (CompressionSettingOptions.Num() > 0)
+	{
+		SelectedCompressionSetting = CompressionSettingOptions[0];
+	}
+
 
 	// sRGBのデフォルト値を設定
 	bSRGBEnabled = false;
@@ -165,6 +185,29 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 						.Text_Lambda([this] { return FText::FromString(*SelectedTextureSize.Get()); })
 				]
 		]
+	// 圧縮設定のドロップダウンリストを追加
+	+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(STextBlock)
+				.Text(LOCTEXT("CompressionSettingLabel", "Compression Setting"))
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(SComboBox<TSharedPtr<FString>>)
+				.OptionsSource(&CompressionSettingOptions)
+				.OnSelectionChanged(SComboBox<TSharedPtr<FString>>::FOnSelectionChanged::CreateRaw(this, &FMaterialBakerModule::OnCompressionSettingChanged))
+				.OnGenerateWidget(SComboBox<TSharedPtr<FString>>::FOnGenerateWidget::CreateRaw(this, &FMaterialBakerModule::MakeWidgetForCompressionOption))
+				.InitiallySelectedItem(SelectedCompressionSetting)
+				[
+					SNew(STextBlock)
+						.Text_Lambda([this] { return FText::FromString(*SelectedCompressionSetting.Get()); })
+				]
+		]
+
 	+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
@@ -327,8 +370,31 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	UTexture2D* NewTexture = NewObject<UTexture2D>(Package, *UniqueAssetName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
 	NewTexture->AddToRoot();
 
-	// 16bit浮動小数点数テクスチャにはHDR圧縮を使用
-	NewTexture->CompressionSettings = TC_HDR;
+	// 選択された圧縮設定を適用
+	const UEnum* CompressionSettingsEnum = StaticEnum<TextureCompressionSettings>();
+	if (CompressionSettingsEnum)
+	{
+		int64 SelectedValue = INDEX_NONE;
+		// ドロップダウンで選択された表示名を取得
+		const FString SelectedDisplayName = *SelectedCompressionSetting.Get();
+
+		// Enumの全要素をループして、表示名が一致するものを探す
+		for (int32 i = 0; i < CompressionSettingsEnum->NumEnums() - 1; ++i)
+		{
+			if (SelectedDisplayName == CompressionSettingsEnum->GetDisplayNameTextByIndex(i).ToString())
+			{
+				// 表示名が一致したら、そのインデックスのEnum値を取得
+				SelectedValue = CompressionSettingsEnum->GetValueByIndex(i);
+				break;
+			}
+		}
+
+		if (SelectedValue != INDEX_NONE)
+		{
+			NewTexture->CompressionSettings = static_cast<TextureCompressionSettings>(SelectedValue);
+		}
+	}
+
 	// UIのチェックボックスに基づいてsRGBを設定 (リニアデータを保持する場合はfalseを推奨)
 	NewTexture->SRGB = bSRGBEnabled;
 
@@ -371,6 +437,20 @@ TSharedRef<SWidget> FMaterialBakerModule::MakeWidgetForOption(TSharedPtr<FString
 {
 	return SNew(STextBlock).Text(FText::FromString(*InOption));
 }
+
+void FMaterialBakerModule::OnCompressionSettingChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
+{
+	if (NewSelection.IsValid())
+	{
+		SelectedCompressionSetting = NewSelection;
+	}
+}
+
+TSharedRef<SWidget> FMaterialBakerModule::MakeWidgetForCompressionOption(TSharedPtr<FString> InOption)
+{
+	return SNew(STextBlock).Text(FText::FromString(*InOption));
+}
+
 
 void FMaterialBakerModule::PluginButtonClicked()
 {

@@ -50,6 +50,7 @@ public class MaterialBaker : ModuleRules
                 "RHI",
 				"RenderCore",
                 "PropertyEditor",
+                "ImageCore",
                                // ... add private dependencies that you statically link with here ...
              }
          );
