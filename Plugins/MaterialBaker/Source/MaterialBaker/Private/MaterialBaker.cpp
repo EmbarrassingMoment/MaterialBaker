@@ -261,7 +261,8 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 {
 	if (!SelectedMaterial)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No material selected!"));
+		// マテリアルが選択されていない場合、ダイアログを表示
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("NoMaterialSelectedWarning", "Please select a material to bake."));
 		return FReply::Handled();
 	}
 
