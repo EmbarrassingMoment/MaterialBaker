@@ -27,11 +27,11 @@ private:
 	void RegisterMenus();
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
 
-	/** Handler for when texture size is changed */
-	void OnTextureSizeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
+	/** Handler for when texture width is changed */
+	void OnTextureWidthChanged(int32 NewValue);
 
-	/** Generates a widget for a texture size option */
-	TSharedRef<SWidget> MakeWidgetForOption(TSharedPtr<FString> InOption);
+	/** Handler for when texture height is changed */
+	void OnTextureHeightChanged(int32 NewValue);
 
 	/** Handler for when compression setting is changed */
 	void OnCompressionSettingChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
@@ -41,9 +41,6 @@ private:
 
 	/** Handler for when the bake button is clicked */
 	FReply OnBakeButtonClicked();
-
-	/** Parses the texture size string (e.g., "1024x1024") into FIntPoint */
-	bool ParseTextureSize(const FString& SizeString, FIntPoint& OutSize);
 
 	/** Handler for when material selection changes */
 	void OnMaterialChanged(const FAssetData& AssetData);
@@ -67,11 +64,11 @@ private:
 	/** Box to hold the thumbnail widget */
 	TSharedPtr<SBox> ThumbnailBox;
 
-	/** Options for texture size dropdown */
-	TArray<TSharedPtr<FString>> TextureSizeOptions;
+	/** Texture width for baking */
+	int32 TextureWidth = 1024;
 
-	/** Currently selected texture size */
-	TSharedPtr<FString> SelectedTextureSize;
+	/** Texture height for baking */
+	int32 TextureHeight = 1024;
 
 	/** Options for compression setting dropdown */
 	TArray<TSharedPtr<FString>> CompressionSettingOptions;

@@ -28,6 +28,7 @@
 #include "Misc/MessageDialog.h"
 #include "Engine/Texture.h"
 #include "UObject/EnumProperty.h"
+#include "Widgets/Input/SSpinBox.h"
 
 
 
@@ -50,19 +51,6 @@ void FMaterialBakerModule::StartupModule()
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMaterialBakerModule::RegisterMenus));
 
 	ThumbnailPool = MakeShareable(new FAssetThumbnailPool(10));
-
-	// テクスチャサイズの選択肢を初期化
-	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("32x32"))));
-	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("64x64"))));
-	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("128x128"))));
-	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("256x256"))));
-	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("512x512"))));
-	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("1024x1024"))));
-	TextureSizeOptions.Add(MakeShareable(new FString(TEXT("2048x2048"))));
-
-
-	// デフォルトの選択値を設定 (32x32)
-	SelectedTextureSize = TextureSizeOptions[0];
 
 	// 圧縮設定の選択肢を初期化
 	const UEnum* CompressionSettingsEnum = StaticEnum<TextureCompressionSettings>();
@@ -170,19 +158,48 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 			SNew(STextBlock)
 				.Text(LOCTEXT("TextureSizeLabel", "Bake Texture Size"))
 		]
-
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			SNew(SComboBox<TSharedPtr<FString>>)
-				.OptionsSource(&TextureSizeOptions)
-				.OnSelectionChanged(SComboBox<TSharedPtr<FString>>::FOnSelectionChanged::CreateRaw(this, &FMaterialBakerModule::OnTextureSizeChanged))
-				.OnGenerateWidget(SComboBox<TSharedPtr<FString>>::FOnGenerateWidget::CreateRaw(this, &FMaterialBakerModule::MakeWidgetForOption))
-				.InitiallySelectedItem(SelectedTextureSize)
+			SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.0f)
+				.Padding(0.0f, 0.0f, 5.0f, 0.0f)
 				[
 					SNew(STextBlock)
-						.Text_Lambda([this] { return FText::FromString(*SelectedTextureSize.Get()); })
+						.Text(LOCTEXT("TextureWidthLabel", "Width"))
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.0f)
+				[
+					SNew(STextBlock)
+						.Text(LOCTEXT("TextureHeightLabel", "Height"))
+				]
+		]
+	+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.0f)
+				.Padding(0.0f, 0.0f, 5.0f, 0.0f)
+				[
+					SNew(SSpinBox<int32>)
+						.Value(TextureWidth)
+						.OnValueChanged(FOnInt32ValueChanged::CreateRaw(this, &FMaterialBakerModule::OnTextureWidthChanged))
+						.MinValue(1)
+						.MaxValue(8192)
+				]
+			+ SHorizontalBox::Slot()
+				.FillWidth(1.0f)
+				[
+					SNew(SSpinBox<int32>)
+						.Value(TextureHeight)
+						.OnValueChanged(FOnInt32ValueChanged::CreateRaw(this, &FMaterialBakerModule::OnTextureHeightChanged))
+						.MinValue(1)
+						.MaxValue(8192)
 				]
 		]
 	// 圧縮設定のドロップダウンリストを追加
@@ -285,21 +302,6 @@ void FMaterialBakerModule::OnSRGBCheckBoxChanged(ECheckBoxState NewState)
 }
 
 
-bool FMaterialBakerModule::ParseTextureSize(const FString& SizeString, FIntPoint& OutSize)
-{
-	TArray<FString> Parts;
-	SizeString.ParseIntoArray(Parts, TEXT("x"), true);
-
-	if (Parts.Num() == 2)
-	{
-		OutSize.X = FCString::Atoi(*Parts[0]);
-		OutSize.Y = FCString::Atoi(*Parts[1]);
-		return true;
-	}
-
-	return false;
-}
-
 FReply FMaterialBakerModule::OnBakeButtonClicked()
 {
 	if (!SelectedMaterial)
@@ -317,12 +319,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	}
 
 
-	FIntPoint TextureSize;
-	if (!ParseTextureSize(*SelectedTextureSize, TextureSize))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Invalid texture size format!"));
-		return FReply::Handled();
-	}
+	FIntPoint TextureSize(TextureWidth, TextureHeight);
 
 	UWorld* World = GEditor->GetEditorWorldContext().World();
 	if (!World)
@@ -425,17 +422,14 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 }
 
 
-void FMaterialBakerModule::OnTextureSizeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
+void FMaterialBakerModule::OnTextureWidthChanged(int32 NewValue)
 {
-	if (NewSelection.IsValid())
-	{
-		SelectedTextureSize = NewSelection;
-	}
+	TextureWidth = NewValue;
 }
 
-TSharedRef<SWidget> FMaterialBakerModule::MakeWidgetForOption(TSharedPtr<FString> InOption)
+void FMaterialBakerModule::OnTextureHeightChanged(int32 NewValue)
 {
-	return SNew(STextBlock).Text(FText::FromString(*InOption));
+	TextureHeight = NewValue;
 }
 
 void FMaterialBakerModule::OnCompressionSettingChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
