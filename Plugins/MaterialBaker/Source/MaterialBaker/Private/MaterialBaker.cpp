@@ -336,8 +336,13 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	SlowTask.EnterProgressFrame(1, LOCTEXT("CreateRenderTarget", "Step 1/5: Creating Render Target..."));
 
 	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>();
-	RenderTarget->AddToRoot();
+	if (!RenderTarget)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("CreateRenderTargetFailed", "Failed to create Render Target."));
+		return FReply::Handled();
+	}
 
+	RenderTarget->AddToRoot();
 	RenderTarget->RenderTargetFormat = RTF_RGBA16f;
 	// PF_FloatRGBAを指定し、ガンマはリニアに強制
 	RenderTarget->InitCustomFormat(TextureSize.X, TextureSize.Y, PF_FloatRGBA, true);
@@ -365,6 +370,12 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	Package->FullyLoad();
 
 	UTexture2D* NewTexture = NewObject<UTexture2D>(Package, *UniqueAssetName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
+	if (!NewTexture)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("CreateTextureFailed", "Failed to create new texture asset."));
+		RenderTarget->RemoveFromRoot();
+		return FReply::Handled();
+	}
 	NewTexture->AddToRoot();
 
 	// 選択された圧縮設定を適用
@@ -401,7 +412,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	FRenderTarget* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
 
 	TArray<FFloat16Color> RawPixels;
-	if (RenderTargetResource->ReadFloat16Pixels(RawPixels))
+	if (RenderTargetResource && RenderTargetResource->ReadFloat16Pixels(RawPixels))
 	{
 		// ステップ5: テクスチャを更新して保存
 		SlowTask.EnterProgressFrame(1, LOCTEXT("UpdateTexture", "Step 5/5: Updating and Saving Texture..."));
@@ -412,6 +423,10 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 		Package->MarkPackageDirty();
 		FAssetRegistryModule::GetRegistry().AssetCreated(NewTexture);
 		NewTexture->PostEditChange();
+	}
+	else
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ReadPixelFailed", "Failed to read pixels from Render Target."));
 	}
 
 	NewTexture->RemoveFromRoot();
