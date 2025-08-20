@@ -51,6 +51,8 @@ public class MaterialBaker : ModuleRules
 				"RenderCore",
                 "PropertyEditor",
                 "ImageCore",
+                "DesktopPlatform",
+                "ImageWrapper",
                                // ... add private dependencies that you statically link with here ...
              }
          );
