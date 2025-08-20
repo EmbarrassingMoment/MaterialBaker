@@ -51,6 +51,12 @@ private:
 	/** Handler for when sRGB checkbox changes */
 	void OnSRGBCheckBoxChanged(ECheckBoxState NewState);
 
+	/** Handler for when output type is changed */
+	void OnOutputTypeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
+
+	/** Generates a widget for a output type option */
+	TSharedRef<SWidget> MakeWidgetForOutputTypeOption(TSharedPtr<FString> InOption);
+
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
@@ -81,4 +87,10 @@ private:
 
 	/** Whether to enable sRGB for the baked texture */
 	bool bSRGBEnabled = false;
+
+	/** Options for output type dropdown */
+	TArray<TSharedPtr<FString>> OutputTypeOptions;
+
+	/** Currently selected output type */
+	TSharedPtr<FString> SelectedOutputType;
 };

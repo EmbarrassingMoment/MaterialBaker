@@ -22,6 +22,10 @@
 #include "Factories/TextureFactory.h"
 #include "Misc/FileHelper.h"
 #include "Editor.h"
+#include "IImageWrapper.h"
+#include "IImageWrapperModule.h"
+#include "DesktopPlatform/Public/IDesktopPlatform.h"
+#include "DesktopPlatform/Public/DesktopPlatformModule.h"
 #include "Misc/ScopedSlowTask.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "RenderCore.h"
@@ -70,6 +74,13 @@ void FMaterialBakerModule::StartupModule()
 
 	// sRGBのデフォルト値を設定
 	bSRGBEnabled = false;
+
+	// 出力形式の選択肢を初期化
+	OutputTypeOptions.Add(MakeShareable(new FString("Texture Asset")));
+	OutputTypeOptions.Add(MakeShareable(new FString("PNG")));
+	OutputTypeOptions.Add(MakeShareable(new FString("JPEG")));
+	SelectedOutputType = OutputTypeOptions[0];
+
 
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(MaterialBakerTabName, FOnSpawnTab::CreateRaw(this, &FMaterialBakerModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FMaterialBakerTabTitle", "MaterialBaker"))
@@ -247,6 +258,30 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 						.Text(LOCTEXT("sRGBLabel", "sRGB"))
 				]
 		]
+
+		// 出力形式のドロップダウンリストを追加
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(STextBlock)
+			.Text(LOCTEXT("OutputTypeLabel", "Output Type"))
+		]
+	+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(SComboBox<TSharedPtr<FString>>)
+			.OptionsSource(&OutputTypeOptions)
+		.OnSelectionChanged(SComboBox<TSharedPtr<FString>>::FOnSelectionChanged::CreateRaw(this, &FMaterialBakerModule::OnOutputTypeChanged))
+		.OnGenerateWidget(SComboBox<TSharedPtr<FString>>::FOnGenerateWidget::CreateRaw(this, &FMaterialBakerModule::MakeWidgetForOutputTypeOption))
+		.InitiallySelectedItem(SelectedOutputType)
+		[
+			SNew(STextBlock)
+			.Text_Lambda([this] { return FText::FromString(*SelectedOutputType.Get()); })
+		]
+		]
+
 	+ SVerticalBox::Slot()
 		.HAlign(HAlign_Right)
 		.Padding(10.0f)
@@ -355,81 +390,118 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	// レンダリングコマンドをフラッシュして、描画が完了するのを待つ
 	FlushRenderingCommands();
 
-	// ステップ3: アセットの作成準備
-	SlowTask.EnterProgressFrame(1, LOCTEXT("PrepareAsset", "Step 3/5: Preparing Asset..."));
-	FAssetData SelectedMaterialAssetData(SelectedMaterial);
-	FString PackagePath = SelectedMaterialAssetData.PackagePath.ToString();
-	FString AssetName = CustomBakedName;
-
-	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
-	FString UniquePackageName;
-	FString UniqueAssetName;
-	AssetToolsModule.Get().CreateUniqueAssetName(PackagePath / AssetName, TEXT(""), UniquePackageName, UniqueAssetName);
-
-	UPackage* Package = CreatePackage(*UniquePackageName);
-	Package->FullyLoad();
-
-	UTexture2D* NewTexture = NewObject<UTexture2D>(Package, *UniqueAssetName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
-	if (!NewTexture)
+	// ステップ3: ピクセルデータを読み込み
+	SlowTask.EnterProgressFrame(1, LOCTEXT("ReadPixels", "Step 3/5: Reading Pixels..."));
+	FRenderTarget* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
+	TArray<FFloat16Color> RawPixels;
+	if (!RenderTargetResource || !RenderTargetResource->ReadFloat16Pixels(RawPixels))
 	{
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("CreateTextureFailed", "Failed to create new texture asset."));
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ReadPixelFailed", "Failed to read pixels from Render Target."));
 		RenderTarget->RemoveFromRoot();
 		return FReply::Handled();
 	}
-	NewTexture->AddToRoot();
 
-	// 選択された圧縮設定を適用
-	const UEnum* CompressionSettingsEnum = StaticEnum<TextureCompressionSettings>();
-	if (CompressionSettingsEnum)
+
+	if (*SelectedOutputType == "Texture Asset")
 	{
-		int64 SelectedValue = INDEX_NONE;
-		// ドロップダウンで選択された表示名を取得
-		const FString SelectedDisplayName = *SelectedCompressionSetting.Get();
+		// ステップ4: アセットの作成準備
+		SlowTask.EnterProgressFrame(1, LOCTEXT("PrepareAsset", "Step 4/5: Preparing Asset..."));
+		FAssetData SelectedMaterialAssetData(SelectedMaterial);
+		FString PackagePath = SelectedMaterialAssetData.PackagePath.ToString();
+		FString AssetName = CustomBakedName;
 
-		// Enumの全要素をループして、表示名が一致するものを探す
-		for (int32 i = 0; i < CompressionSettingsEnum->NumEnums() - 1; ++i)
+		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
+		FString UniquePackageName;
+		FString UniqueAssetName;
+		AssetToolsModule.Get().CreateUniqueAssetName(PackagePath / AssetName, TEXT(""), UniquePackageName, UniqueAssetName);
+
+		UPackage* Package = CreatePackage(*UniquePackageName);
+		Package->FullyLoad();
+
+		UTexture2D* NewTexture = NewObject<UTexture2D>(Package, *UniqueAssetName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
+		if (!NewTexture)
 		{
-			if (SelectedDisplayName == CompressionSettingsEnum->GetDisplayNameTextByIndex(i).ToString())
+			FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("CreateTextureFailed", "Failed to create new texture asset."));
+			RenderTarget->RemoveFromRoot();
+			return FReply::Handled();
+		}
+		NewTexture->AddToRoot();
+
+		// 選択された圧縮設定を適用
+		const UEnum* CompressionSettingsEnum = StaticEnum<TextureCompressionSettings>();
+		if (CompressionSettingsEnum)
+		{
+			int64 SelectedValue = INDEX_NONE;
+			const FString SelectedDisplayName = *SelectedCompressionSetting.Get();
+			for (int32 i = 0; i < CompressionSettingsEnum->NumEnums() - 1; ++i)
 			{
-				// 表示名が一致したら、そのインデックスのEnum値を取得
-				SelectedValue = CompressionSettingsEnum->GetValueByIndex(i);
-				break;
+				if (SelectedDisplayName == CompressionSettingsEnum->GetDisplayNameTextByIndex(i).ToString())
+				{
+					SelectedValue = CompressionSettingsEnum->GetValueByIndex(i);
+					break;
+				}
+			}
+			if (SelectedValue != INDEX_NONE)
+			{
+				NewTexture->CompressionSettings = static_cast<TextureCompressionSettings>(SelectedValue);
 			}
 		}
 
-		if (SelectedValue != INDEX_NONE)
-		{
-			NewTexture->CompressionSettings = static_cast<TextureCompressionSettings>(SelectedValue);
-		}
-	}
+		NewTexture->SRGB = bSRGBEnabled;
 
-	// UIのチェックボックスに基づいてsRGBを設定 (リニアデータを保持する場合はfalseを推奨)
-	NewTexture->SRGB = bSRGBEnabled;
-
-
-	// ステップ4: ピクセルデータを読み込み
-	SlowTask.EnterProgressFrame(1, LOCTEXT("ReadPixels", "Step 4/5: Reading Pixels..."));
-	FRenderTarget* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
-
-	TArray<FFloat16Color> RawPixels;
-	if (RenderTargetResource && RenderTargetResource->ReadFloat16Pixels(RawPixels))
-	{
 		// ステップ5: テクスチャを更新して保存
 		SlowTask.EnterProgressFrame(1, LOCTEXT("UpdateTexture", "Step 5/5: Updating and Saving Texture..."));
-
 		NewTexture->Source.Init(TextureSize.X, TextureSize.Y, 1, 1, TSF_RGBA16F, (const uint8*)RawPixels.GetData());
 		NewTexture->UpdateResource();
-
 		Package->MarkPackageDirty();
 		FAssetRegistryModule::GetRegistry().AssetCreated(NewTexture);
 		NewTexture->PostEditChange();
+		NewTexture->RemoveFromRoot();
 	}
-	else
+	else if (*SelectedOutputType == "PNG" || *SelectedOutputType == "JPEG")
 	{
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ReadPixelFailed", "Failed to read pixels from Render Target."));
+		// ステップ4: 画像ファイルとしてエクスポート
+		SlowTask.EnterProgressFrame(1, LOCTEXT("ExportImage", "Step 4/5: Exporting Image..."));
+
+		TArray<FColor> OutPixels;
+		OutPixels.AddUninitialized(TextureSize.X * TextureSize.Y);
+		for (int32 i = 0; i < RawPixels.Num(); ++i)
+		{
+			OutPixels[i] = RawPixels[i].ToFColor(bSRGBEnabled);
+		}
+
+		// ファイルダイアログを開く
+		IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
+		if (DesktopPlatform)
+		{
+			TArray<FString> OutFiles;
+			FString Filter = (*SelectedOutputType == "PNG") ? TEXT("PNG Image|*.png") : TEXT("JPEG Image|*.jpg;*.jpeg");
+			bool bOpened = DesktopPlatform->SaveFileDialog(
+				FSlateApplication::Get().FindBestParentWindowHandleForDialogs(nullptr),
+				TEXT("Save Baked Texture"),
+				FPaths::ProjectSavedDir(),
+				CustomBakedName + ((*SelectedOutputType == "PNG") ? ".png" : ".jpg"),
+				Filter,
+				EFileDialogFlags::None,
+				OutFiles
+			);
+
+			if (bOpened && OutFiles.Num() > 0)
+			{
+				FString SaveFilePath = OutFiles[0];
+				IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
+				EImageFormat ImageFormat = (*SelectedOutputType == "PNG") ? EImageFormat::PNG : EImageFormat::JPEG;
+				TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormat);
+
+				if (ImageWrapper.IsValid() && ImageWrapper->SetRaw(OutPixels.GetData(), OutPixels.Num() * sizeof(FColor), TextureSize.X, TextureSize.Y, ERGBFormat::BGRA, 8))
+				{
+					const TArray64<uint8>& CompressedData = ImageWrapper->GetCompressed();
+					FFileHelper::SaveArrayToFile(CompressedData, *SaveFilePath);
+				}
+			}
+		}
 	}
 
-	NewTexture->RemoveFromRoot();
 	RenderTarget->RemoveFromRoot();
 
 
@@ -456,6 +528,19 @@ void FMaterialBakerModule::OnCompressionSettingChanged(TSharedPtr<FString> NewSe
 }
 
 TSharedRef<SWidget> FMaterialBakerModule::MakeWidgetForCompressionOption(TSharedPtr<FString> InOption)
+{
+	return SNew(STextBlock).Text(FText::FromString(*InOption));
+}
+
+void FMaterialBakerModule::OnOutputTypeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
+{
+	if (NewSelection.IsValid())
+	{
+		SelectedOutputType = NewSelection;
+	}
+}
+
+TSharedRef<SWidget> FMaterialBakerModule::MakeWidgetForOutputTypeOption(TSharedPtr<FString> InOption)
 {
 	return SNew(STextBlock).Text(FText::FromString(*InOption));
 }
