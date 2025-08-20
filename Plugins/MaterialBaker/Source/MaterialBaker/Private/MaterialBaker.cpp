@@ -24,8 +24,8 @@
 #include "Editor.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
-#include "DesktopPlatform/Public/IDesktopPlatform.h"
-#include "DesktopPlatform/Public/DesktopPlatformModule.h"
+#include "IDesktopPlatform.h"
+#include "DesktopPlatformModule.h"
 #include "Misc/ScopedSlowTask.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "RenderCore.h"
@@ -467,7 +467,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 		OutPixels.AddUninitialized(TextureSize.X * TextureSize.Y);
 		for (int32 i = 0; i < RawPixels.Num(); ++i)
 		{
-			OutPixels[i] = RawPixels[i].ToFColor(bSRGBEnabled);
+			OutPixels[i] = FLinearColor(RawPixels[i]).ToFColor(bSRGBEnabled);
 		}
 
 		// ファイルダイアログを開く
