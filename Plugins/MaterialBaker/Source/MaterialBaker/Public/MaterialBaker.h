@@ -57,6 +57,12 @@ private:
 	/** Generates a widget for a output type option */
 	TSharedRef<SWidget> MakeWidgetForOutputTypeOption(TSharedPtr<FString> InOption);
 
+	/** Handler for when the browse button is clicked */
+	FReply OnBrowseButtonClicked();
+
+	/** Handler for when output path text changes */
+	void OnOutputPathTextChanged(const FText& InText);
+
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
@@ -93,4 +99,7 @@ private:
 
 	/** Currently selected output type */
 	TSharedPtr<FString> SelectedOutputType;
+
+	/** Output path for the baked texture */
+	FString OutputPath;
 };
