@@ -283,6 +283,35 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		]
 
 	+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(STextBlock)
+			.Text(LOCTEXT("OutputPathLabel", "Output Path"))
+		]
+	+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			[
+				SNew(SEditableTextBox)
+				.Text_Lambda([this] { return FText::FromString(OutputPath); })
+				.OnTextChanged(FOnTextChanged::CreateRaw(this, &FMaterialBakerModule::OnOutputPathTextChanged))
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(5.0f, 0.0f, 0.0f, 0.0f)
+			[
+				SNew(SButton)
+				.Text(LOCTEXT("BrowseButton", "Browse..."))
+				.OnClicked(FOnClicked::CreateRaw(this, &FMaterialBakerModule::OnBrowseButtonClicked))
+			]
+		]
+
+	+ SVerticalBox::Slot()
 		.HAlign(HAlign_Right)
 		.Padding(10.0f)
 		[
@@ -304,6 +333,14 @@ void FMaterialBakerModule::OnMaterialChanged(const FAssetData& AssetData)
 {
 	// アセットをUMaterialInterfaceにキャストして保持
 	SelectedMaterial = Cast<UMaterialInterface>(AssetData.GetAsset());
+
+	if (SelectedMaterial)
+	{
+		OutputPath = SelectedMaterial->GetOutermost()->GetPathName();
+		FString PackagePath = FPackageName::GetLongPackagePath(SelectedMaterial->GetPathName());
+		OutputPath = PackagePath;
+	}
+
 
 	if (ThumbnailBox.IsValid() && SelectedMaterial)
 	{
@@ -406,8 +443,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	{
 		// ステップ4: アセットの作成準備
 		SlowTask.EnterProgressFrame(1, LOCTEXT("PrepareAsset", "Step 4/5: Preparing Asset..."));
-		FAssetData SelectedMaterialAssetData(SelectedMaterial);
-		FString PackagePath = SelectedMaterialAssetData.PackagePath.ToString();
+		FString PackagePath = OutputPath;
 		FString AssetName = CustomBakedName;
 
 		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
@@ -543,6 +579,39 @@ void FMaterialBakerModule::OnOutputTypeChanged(TSharedPtr<FString> NewSelection,
 TSharedRef<SWidget> FMaterialBakerModule::MakeWidgetForOutputTypeOption(TSharedPtr<FString> InOption)
 {
 	return SNew(STextBlock).Text(FText::FromString(*InOption));
+}
+
+void FMaterialBakerModule::OnOutputPathTextChanged(const FText& InText)
+{
+	OutputPath = InText.ToString();
+}
+
+FReply FMaterialBakerModule::OnBrowseButtonClicked()
+{
+	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
+	if (DesktopPlatform)
+	{
+		FString FolderName;
+		const FString Title = TEXT("Select Output Folder");
+		const FString DefaultPath = FPaths::ProjectContentDir();
+		if (DesktopPlatform->OpenDirectoryDialog(
+			FSlateApplication::Get().FindBestParentWindowHandleForDialogs(nullptr),
+			Title,
+			DefaultPath,
+			FolderName
+		))
+		{
+			if (FPaths::MakePathRelativeTo(FolderName, *FPaths::ProjectContentDir()))
+			{
+				OutputPath = FString("/Game/") + FolderName;
+			}
+			else
+			{
+				OutputPath = FolderName;
+			}
+		}
+	}
+	return FReply::Handled();
 }
 
 
