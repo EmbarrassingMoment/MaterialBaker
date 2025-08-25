@@ -12,7 +12,7 @@ class SMaterialDropTarget : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SMaterialDropTarget) {}
-		SLATE_EVENT(FOnMaterialDropped, OnMaterialDropped)
+	SLATE_EVENT(FOnMaterialDropped, OnMaterialDropped)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);

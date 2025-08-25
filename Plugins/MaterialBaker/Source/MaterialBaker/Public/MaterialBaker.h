@@ -1,4 +1,4 @@
-// Copyright 2025 kurorekish. All Rights Reserved.
+ï»¿// Copyright 2025 kurorekish. All Rights Reserved.
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #include "Modules/ModuleManager.h"
 #include "Materials/MaterialInterface.h"
 #include "AssetRegistry/AssetData.h"
-#include "Engine/Texture.h" // ETextureCompressionSettings ‚ğg—p‚·‚é‚½‚ß‚ÉƒCƒ“ƒNƒ‹[ƒh
+#include "Engine/Texture.h" // ETextureCompressionSettings ã‚’ä½¿ç”¨ã™ã‚‹ãŸã‚ã«ã‚¤ãƒ³ã‚¯ãƒ«ãƒ¼ãƒ‰
 
 class FToolBarBuilder;
 class FMenuBuilder;
