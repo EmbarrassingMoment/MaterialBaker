@@ -7,6 +7,7 @@
 #include "Materials/MaterialInterface.h"
 #include "AssetRegistry/AssetData.h"
 #include "Engine/Texture.h" // ETextureCompressionSettings を使用するためにインクルード
+#include "MaterialBakerTypes.h"
 
 class FToolBarBuilder;
 class FMenuBuilder;
