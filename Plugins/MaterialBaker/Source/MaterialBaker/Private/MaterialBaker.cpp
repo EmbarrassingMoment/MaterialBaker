@@ -109,10 +109,10 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 			]
 		];
 
-	SAssignNew(BakeQueueListView, SListView<TSharedPtr<FMaterialBakeSettings>>)
-		.ListItemsSource(&BakeQueue)
-		.OnGenerateRow(this, &FMaterialBakerModule::OnGenerateRowForBakeQueue)
-		.OnSelectionChanged(this, &FMaterialBakerModule::OnBakeQueueSelectionChanged)
+        SAssignNew(BakeQueueListView, SListView<TSharedPtr<FMaterialBakeSettings>>)
+                .ListItemsSource(&BakeQueue)
+                .OnGenerateRow(SListView<TSharedPtr<FMaterialBakeSettings>>::FOnGenerateRow::CreateRaw(this, &FMaterialBakerModule::OnGenerateRowForBakeQueue))
+                .OnSelectionChanged(SListView<TSharedPtr<FMaterialBakeSettings>>::FOnSelectionChanged::CreateRaw(this, &FMaterialBakerModule::OnBakeQueueSelectionChanged))
 		.HeaderRow
 		(
 			SNew(SHeaderRow)
@@ -336,7 +336,7 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 			[
 				SNew(SButton)
 				.Text(LOCTEXT("AddToQueueButton", "Add to Queue"))
-				.OnClicked(this, &FMaterialBakerModule::OnAddToQueueClicked)
+                                .OnClicked(FOnClicked::CreateRaw(this, &FMaterialBakerModule::OnAddToQueueClicked))
 			]
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.f)
@@ -344,7 +344,7 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 			[
 				SNew(SButton)
 				.Text(LOCTEXT("UpdateSelectedButton", "Update Selected"))
-				.OnClicked(this, &FMaterialBakerModule::OnUpdateSelectedClicked)
+                                .OnClicked(FOnClicked::CreateRaw(this, &FMaterialBakerModule::OnUpdateSelectedClicked))
 			]
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.f)
@@ -352,7 +352,7 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 			[
 				SNew(SButton)
 				.Text(LOCTEXT("RemoveSelectedButton", "Remove Selected"))
-				.OnClicked(this, &FMaterialBakerModule::OnRemoveSelectedClicked)
+                                .OnClicked(FOnClicked::CreateRaw(this, &FMaterialBakerModule::OnRemoveSelectedClicked))
 			]
 		]
 		+ SVerticalBox::Slot()

@@ -17,7 +17,7 @@ class FAssetThumbnailPool;
 class ITableRow;
 class STableViewBase;
 
-class FMaterialBakerModule : public IModuleInterface, public TSharedFromThis<FMaterialBakerModule>
+class FMaterialBakerModule : public IModuleInterface
 {
 public:
 	/** IModuleInterface implementation */
