@@ -1,4 +1,4 @@
-﻿// Copyright 2025 kurorekish. All Rights Reserved.
+// Copyright 2025 kurorekish. All Rights Reserved.
 
 #pragma once
 
@@ -8,13 +8,16 @@
 #include "AssetRegistry/AssetData.h"
 #include "Engine/Texture.h" // ETextureCompressionSettings を使用するためにインクルード
 #include "MaterialBakerTypes.h"
+#include "Widgets/Views/SListView.h"
 
 class FToolBarBuilder;
 class FMenuBuilder;
 class SBox;
 class FAssetThumbnailPool;
+class ITableRow;
+class STableViewBase;
 
-class FMaterialBakerModule : public IModuleInterface, public TSharedFromThis<FMaterialBakerModule>
+class FMaterialBakerModule : public IModuleInterface
 {
 public:
 	/** IModuleInterface implementation */
@@ -64,12 +67,25 @@ private:
 	/** Handler for when output path text changes */
 	void OnOutputPathTextChanged(const FText& InText);
 
+	/** Handler for when the "Add to Queue" button is clicked */
+	FReply OnAddToQueueClicked();
+
+	/** Generates a row widget for the bake queue list view */
+	TSharedRef<ITableRow> OnGenerateRowForBakeQueue(TSharedPtr<FMaterialBakeSettings> InItem, const TSharedRef<STableViewBase>& OwnerTable);
+
+	/** Handler for when an item is selected in the bake queue */
+	void OnBakeQueueSelectionChanged(TSharedPtr<FMaterialBakeSettings> InItem, ESelectInfo::Type SelectInfo);
+
+	/** Handler for when the "Remove Selected" button is clicked */
+	FReply OnRemoveSelectedClicked();
+
+	/** Handler for when the "Update Selected" button is clicked */
+	FReply OnUpdateSelectedClicked();
+
+	void BakeMaterial(const FMaterialBakeSettings& BakeSettings);
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
-
-	/** Material asset selected in the UI */
-	class UMaterialInterface* SelectedMaterial = nullptr;
 
 	/** Thumbnail pool for the asset thumbnail */
 	TSharedPtr<FAssetThumbnailPool> ThumbnailPool;
@@ -77,30 +93,21 @@ private:
 	/** Box to hold the thumbnail widget */
 	TSharedPtr<SBox> ThumbnailBox;
 
-	/** Texture width for baking */
-	int32 TextureWidth = 1024;
-
-	/** Texture height for baking */
-	int32 TextureHeight = 1024;
-
 	/** Options for compression setting dropdown */
 	TArray<TSharedPtr<FString>> CompressionSettingOptions;
-
-	/** Currently selected compression setting */
-	TSharedPtr<FString> SelectedCompressionSetting;
-
-	/** Custom name for the baked texture */
-	FString CustomBakedName;
-
-	/** Whether to enable sRGB for the baked texture */
-	bool bSRGBEnabled = false;
 
 	/** Options for output type dropdown */
 	TArray<TSharedPtr<FString>> OutputTypeOptions;
 
-	/** Currently selected output type */
-	TSharedPtr<FString> SelectedOutputType;
+	/** Current bake settings */
+	FMaterialBakeSettings CurrentBakeSettings;
 
-	/** Output path for the baked texture */
-	FString OutputPath;
+	/** Bake queue */
+	TArray<TSharedPtr<FMaterialBakeSettings>> BakeQueue;
+
+	/** Bake queue list view widget */
+	TSharedPtr<SListView<TSharedPtr<FMaterialBakeSettings>>> BakeQueueListView;
+
+	/** Currently selected item in the bake queue */
+	TSharedPtr<FMaterialBakeSettings> SelectedQueueItem;
 };

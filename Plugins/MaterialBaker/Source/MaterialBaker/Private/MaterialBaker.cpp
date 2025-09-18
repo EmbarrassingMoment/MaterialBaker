@@ -56,6 +56,8 @@ void FMaterialBakerModule::StartupModule()
 
 	ThumbnailPool = MakeShareable(new FAssetThumbnailPool(10));
 
+	CurrentBakeSettings = FMaterialBakeSettings();
+
 	// 圧縮設定の選択肢を初期化
 	const UEnum* CompressionSettingsEnum = StaticEnum<TextureCompressionSettings>();
 	if (CompressionSettingsEnum)
@@ -65,21 +67,16 @@ void FMaterialBakerModule::StartupModule()
 			CompressionSettingOptions.Add(MakeShareable(new FString(CompressionSettingsEnum->GetDisplayNameTextByIndex(i).ToString())));
 		}
 	}
-	// デフォルトの圧縮設定
-	if (CompressionSettingOptions.Num() > 0)
-	{
-		SelectedCompressionSetting = CompressionSettingOptions[0];
-	}
-
-
-	// sRGBのデフォルト値を設定
-	bSRGBEnabled = false;
 
 	// 出力形式の選択肢を初期化
-	OutputTypeOptions.Add(MakeShareable(new FString("Texture Asset")));
-	OutputTypeOptions.Add(MakeShareable(new FString("PNG")));
-	OutputTypeOptions.Add(MakeShareable(new FString("JPEG")));
-	SelectedOutputType = OutputTypeOptions[0];
+	const UEnum* OutputTypeEnum = StaticEnum<EMaterialBakeOutputType>();
+	if (OutputTypeEnum)
+	{
+		for (int32 i = 0; i < OutputTypeEnum->NumEnums(); ++i)
+		{
+			OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByIndex(i).ToString())));
+		}
+	}
 
 
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(MaterialBakerTabName, FOnSpawnTab::CreateRaw(this, &FMaterialBakerModule::OnSpawnPluginTab))
@@ -104,14 +101,24 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		.HeightOverride(64.f)
 		[
 			SNew(SBorder)
-				.Padding(4.f)
-				[
-					SNew(STextBlock)
-						.Text(LOCTEXT("NoMaterialSelected", "No Material Selected"))
-						.Justification(ETextJustify::Center)
-				]
+			.Padding(4.f)
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("NoMaterialSelected", "No Material Selected"))
+				.Justification(ETextJustify::Center)
+			]
 		];
 
+        SAssignNew(BakeQueueListView, SListView<TSharedPtr<FMaterialBakeSettings>>)
+                .ListItemsSource(&BakeQueue)
+                .OnGenerateRow(SListView<TSharedPtr<FMaterialBakeSettings>>::FOnGenerateRow::CreateRaw(this, &FMaterialBakerModule::OnGenerateRowForBakeQueue))
+                .OnSelectionChanged(SListView<TSharedPtr<FMaterialBakeSettings>>::FOnSelectionChanged::CreateRaw(this, &FMaterialBakerModule::OnBakeQueueSelectionChanged))
+		.HeaderRow
+		(
+			SNew(SHeaderRow)
+			+ SHeaderRow::Column("Material").DefaultLabel(LOCTEXT("MaterialColumn", "Material"))
+			+ SHeaderRow::Column("BakedName").DefaultLabel(LOCTEXT("BakedNameColumn", "Baked Name"))
+		);
 
 	TSharedRef<SVerticalBox> WidgetContent = SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
@@ -119,147 +126,149 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		.Padding(5.0f)
 		[
 			SNew(STextBlock)
-				.Text(LOCTEXT("SelectMaterialLabel", "Target Material"))
+			.Text(LOCTEXT("SelectMaterialLabel", "Target Material"))
 		]
-		// サムネイルとマテリアル選択欄の底辺を揃える
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
 			SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.Padding(0.0f, 0.0f, 5.0f, 0.0f)
-				.VAlign(VAlign_Bottom) // 底辺を揃える
-				[
-					ThumbnailBox.ToSharedRef()
-				]
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.0f)
-				.VAlign(VAlign_Bottom) // 底辺を揃える
-				[
-					// SObjectPropertyEntryBox を使用してアセットピッカーを作成
-					SNew(SObjectPropertyEntryBox)
-						.AllowedClass(UMaterialInterface::StaticClass()) // 選択をマテリアルインターフェースに限定
-						.OnObjectChanged(FOnSetObject::CreateRaw(this, &FMaterialBakerModule::OnMaterialChanged)) // アセット変更時のハンドラ
-						.ObjectPath_Lambda([this]() -> FString { // 現在選択中のアセットをUIに表示
-						return SelectedMaterial ? SelectedMaterial->GetPathName() : FString("");
-							})
-				]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(0.0f, 0.0f, 5.0f, 0.0f)
+			.VAlign(VAlign_Bottom)
+			[
+				ThumbnailBox.ToSharedRef()
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			.VAlign(VAlign_Bottom)
+			[
+				SNew(SObjectPropertyEntryBox)
+				.AllowedClass(UMaterialInterface::StaticClass())
+				.OnObjectChanged(FOnSetObject::CreateRaw(this, &FMaterialBakerModule::OnMaterialChanged))
+				.ObjectPath_Lambda([this]() -> FString {
+					return CurrentBakeSettings.Material ? CurrentBakeSettings.Material->GetPathName() : FString("");
+				})
+			]
 		]
-	+ SVerticalBox::Slot()
+		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
 			SNew(STextBlock)
-				.Text(LOCTEXT("BakedNameLabel", "Baked Texture Name"))
+			.Text(LOCTEXT("BakedNameLabel", "Baked Texture Name"))
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
 			SNew(SEditableTextBox)
-				.HintText(LOCTEXT("BakedNameHint", "Enter baked texture name"))
-				.OnTextChanged(FOnTextChanged::CreateRaw(this, &FMaterialBakerModule::OnBakedNameTextChanged))
+			.HintText(LOCTEXT("BakedNameHint", "Enter baked texture name"))
+			.Text_Lambda([this]() { return FText::FromString(CurrentBakeSettings.BakedName); })
+			.OnTextChanged(FOnTextChanged::CreateRaw(this, &FMaterialBakerModule::OnBakedNameTextChanged))
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
 			SNew(STextBlock)
-				.Text(LOCTEXT("TextureSizeLabel", "Bake Texture Size"))
+			.Text(LOCTEXT("TextureSizeLabel", "Bake Texture Size"))
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
 			SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.0f)
-				.Padding(0.0f, 0.0f, 5.0f, 0.0f)
-				[
-					SNew(STextBlock)
-						.Text(LOCTEXT("TextureWidthLabel", "Width"))
-				]
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.0f)
-				[
-					SNew(STextBlock)
-						.Text(LOCTEXT("TextureHeightLabel", "Height"))
-				]
-		]
-	+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(5.0f)
-		[
-			SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.0f)
-				.Padding(0.0f, 0.0f, 5.0f, 0.0f)
-				[
-					SNew(SSpinBox<int32>)
-						.Value(TextureWidth)
-						.OnValueChanged(FOnInt32ValueChanged::CreateRaw(this, &FMaterialBakerModule::OnTextureWidthChanged))
-						.MinValue(1)
-						.MaxValue(8192)
-				]
 			+ SHorizontalBox::Slot()
-				.FillWidth(1.0f)
-				[
-					SNew(SSpinBox<int32>)
-						.Value(TextureHeight)
-						.OnValueChanged(FOnInt32ValueChanged::CreateRaw(this, &FMaterialBakerModule::OnTextureHeightChanged))
-						.MinValue(1)
-						.MaxValue(8192)
-				]
+			.FillWidth(1.0f)
+			.Padding(0.0f, 0.0f, 5.0f, 0.0f)
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("TextureWidthLabel", "Width"))
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("TextureHeightLabel", "Height"))
+			]
 		]
-	// 圧縮設定のドロップダウンリストを追加
-	+ SVerticalBox::Slot()
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			.Padding(0.0f, 0.0f, 5.0f, 0.0f)
+			[
+				SNew(SSpinBox<int32>)
+				.Value_Lambda([this]() { return CurrentBakeSettings.TextureWidth; })
+				.OnValueChanged(FOnInt32ValueChanged::CreateRaw(this, &FMaterialBakerModule::OnTextureWidthChanged))
+				.MinValue(1)
+				.MaxValue(8192)
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			[
+				SNew(SSpinBox<int32>)
+				.Value_Lambda([this]() { return CurrentBakeSettings.TextureHeight; })
+				.OnValueChanged(FOnInt32ValueChanged::CreateRaw(this, &FMaterialBakerModule::OnTextureHeightChanged))
+				.MinValue(1)
+				.MaxValue(8192)
+			]
+		]
+		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
 			SNew(STextBlock)
-				.Text(LOCTEXT("CompressionSettingLabel", "Compression Setting"))
+			.Text(LOCTEXT("CompressionSettingLabel", "Compression Setting"))
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
 			SNew(SComboBox<TSharedPtr<FString>>)
-				.OptionsSource(&CompressionSettingOptions)
-				.OnSelectionChanged(SComboBox<TSharedPtr<FString>>::FOnSelectionChanged::CreateRaw(this, &FMaterialBakerModule::OnCompressionSettingChanged))
-				.OnGenerateWidget(SComboBox<TSharedPtr<FString>>::FOnGenerateWidget::CreateRaw(this, &FMaterialBakerModule::MakeWidgetForCompressionOption))
-				.InitiallySelectedItem(SelectedCompressionSetting)
-				[
-					SNew(STextBlock)
-						.Text_Lambda([this] { return FText::FromString(*SelectedCompressionSetting.Get()); })
-				]
+			.OptionsSource(&CompressionSettingOptions)
+			.OnSelectionChanged(SComboBox<TSharedPtr<FString>>::FOnSelectionChanged::CreateRaw(this, &FMaterialBakerModule::OnCompressionSettingChanged))
+			.OnGenerateWidget(SComboBox<TSharedPtr<FString>>::FOnGenerateWidget::CreateRaw(this, &FMaterialBakerModule::MakeWidgetForCompressionOption))
+			.InitiallySelectedItem(CompressionSettingOptions.Num() > 0 ? CompressionSettingOptions[0] : nullptr)
+			[
+				SNew(STextBlock)
+				.Text_Lambda([this] {
+					const UEnum* Enum = StaticEnum<TextureCompressionSettings>();
+					if (Enum)
+					{
+						return Enum->GetDisplayNameTextByValue(CurrentBakeSettings.CompressionSettings);
+					}
+					return FText::GetEmpty();
+				})
+			]
 		]
-
-	+ SVerticalBox::Slot()
+		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
 			SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				[
-					SNew(SCheckBox)
-						.IsChecked_Lambda([this]() -> ECheckBoxState { return bSRGBEnabled ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
-						.OnCheckStateChanged(FOnCheckStateChanged::CreateRaw(this, &FMaterialBakerModule::OnSRGBCheckBoxChanged))
-				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				.Padding(FMargin(5.0f, 0.0f, 0.0f, 0.0f))
-				[
-					SNew(STextBlock)
-						.Text(LOCTEXT("sRGBLabel", "sRGB"))
-				]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				SNew(SCheckBox)
+				.IsChecked_Lambda([this]() -> ECheckBoxState { return CurrentBakeSettings.bSRGB ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+				.OnCheckStateChanged(FOnCheckStateChanged::CreateRaw(this, &FMaterialBakerModule::OnSRGBCheckBoxChanged))
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(FMargin(5.0f, 0.0f, 0.0f, 0.0f))
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("sRGBLabel", "sRGB"))
+			]
 		]
-
-		// 出力形式のドロップダウンリストを追加
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
@@ -267,29 +276,35 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 			SNew(STextBlock)
 			.Text(LOCTEXT("OutputTypeLabel", "Output Type"))
 		]
-	+ SVerticalBox::Slot()
+		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
 			SNew(SComboBox<TSharedPtr<FString>>)
 			.OptionsSource(&OutputTypeOptions)
-		.OnSelectionChanged(SComboBox<TSharedPtr<FString>>::FOnSelectionChanged::CreateRaw(this, &FMaterialBakerModule::OnOutputTypeChanged))
-		.OnGenerateWidget(SComboBox<TSharedPtr<FString>>::FOnGenerateWidget::CreateRaw(this, &FMaterialBakerModule::MakeWidgetForOutputTypeOption))
-		.InitiallySelectedItem(SelectedOutputType)
-		[
-			SNew(STextBlock)
-			.Text_Lambda([this] { return FText::FromString(*SelectedOutputType.Get()); })
+			.OnSelectionChanged(SComboBox<TSharedPtr<FString>>::FOnSelectionChanged::CreateRaw(this, &FMaterialBakerModule::OnOutputTypeChanged))
+			.OnGenerateWidget(SComboBox<TSharedPtr<FString>>::FOnGenerateWidget::CreateRaw(this, &FMaterialBakerModule::MakeWidgetForOutputTypeOption))
+			.InitiallySelectedItem(OutputTypeOptions.Num() > 0 ? OutputTypeOptions[0] : nullptr)
+			[
+				SNew(STextBlock)
+				.Text_Lambda([this] {
+					const UEnum* Enum = StaticEnum<EMaterialBakeOutputType>();
+					if (Enum)
+					{
+						return Enum->GetDisplayNameTextByValue((int64)CurrentBakeSettings.OutputType);
+					}
+					return FText::GetEmpty();
+				})
+			]
 		]
-		]
-
-	+ SVerticalBox::Slot()
+		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
 			SNew(STextBlock)
 			.Text(LOCTEXT("OutputPathLabel", "Output Path"))
 		]
-	+ SVerticalBox::Slot()
+		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
 		[
@@ -298,7 +313,7 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 			.FillWidth(1.0f)
 			[
 				SNew(SEditableTextBox)
-				.Text_Lambda([this] { return FText::FromString(OutputPath); })
+				.Text_Lambda([this] { return FText::FromString(CurrentBakeSettings.OutputPath); })
 				.OnTextChanged(FOnTextChanged::CreateRaw(this, &FMaterialBakerModule::OnOutputPathTextChanged))
 			]
 			+ SHorizontalBox::Slot()
@@ -310,14 +325,50 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 				.OnClicked(FOnClicked::CreateRaw(this, &FMaterialBakerModule::OnBrowseButtonClicked))
 			]
 		]
-
-	+ SVerticalBox::Slot()
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(10.0f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.f)
+			.Padding(2.f)
+			[
+				SNew(SButton)
+				.Text(LOCTEXT("AddToQueueButton", "Add to Queue"))
+                                .OnClicked(FOnClicked::CreateRaw(this, &FMaterialBakerModule::OnAddToQueueClicked))
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.f)
+			.Padding(2.f)
+			[
+				SNew(SButton)
+				.Text(LOCTEXT("UpdateSelectedButton", "Update Selected"))
+                                .OnClicked(FOnClicked::CreateRaw(this, &FMaterialBakerModule::OnUpdateSelectedClicked))
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.f)
+			.Padding(2.f)
+			[
+				SNew(SButton)
+				.Text(LOCTEXT("RemoveSelectedButton", "Remove Selected"))
+                                .OnClicked(FOnClicked::CreateRaw(this, &FMaterialBakerModule::OnRemoveSelectedClicked))
+			]
+		]
+		+ SVerticalBox::Slot()
+		.FillHeight(1.0f)
+		.Padding(5.0f)
+		[
+			BakeQueueListView.ToSharedRef()
+		]
+		+ SVerticalBox::Slot()
 		.HAlign(HAlign_Right)
+		.AutoHeight()
 		.Padding(10.0f)
 		[
 			SNew(SButton)
-				.Text(LOCTEXT("BakeButton", "Bake Material"))
-				.OnClicked(FOnClicked::CreateRaw(this, &FMaterialBakerModule::OnBakeButtonClicked))
+			.Text(LOCTEXT("BakeButton", "Bake All"))
+			.OnClicked(FOnClicked::CreateRaw(this, &FMaterialBakerModule::OnBakeButtonClicked))
 		];
 
 	return SNew(SDockTab)
@@ -331,18 +382,15 @@ TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs&
 
 void FMaterialBakerModule::OnMaterialChanged(const FAssetData& AssetData)
 {
-	// アセットをUMaterialInterfaceにキャストして保持
-	SelectedMaterial = Cast<UMaterialInterface>(AssetData.GetAsset());
+	CurrentBakeSettings.Material = Cast<UMaterialInterface>(AssetData.GetAsset());
 
-	if (SelectedMaterial)
+	if (CurrentBakeSettings.Material)
 	{
-		OutputPath = SelectedMaterial->GetOutermost()->GetPathName();
-		FString PackagePath = FPackageName::GetLongPackagePath(SelectedMaterial->GetPathName());
-		OutputPath = PackagePath;
+		CurrentBakeSettings.OutputPath = FPackageName::GetLongPackagePath(CurrentBakeSettings.Material->GetPathName());
 	}
 
 
-	if (ThumbnailBox.IsValid() && SelectedMaterial)
+	if (ThumbnailBox.IsValid() && CurrentBakeSettings.Material)
 	{
 		// 選択されたアセットのサムネイルを更新
 		TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, 64, 64, ThumbnailPool));
@@ -365,43 +413,28 @@ void FMaterialBakerModule::OnMaterialChanged(const FAssetData& AssetData)
 
 void FMaterialBakerModule::OnBakedNameTextChanged(const FText& InText)
 {
-	CustomBakedName = InText.ToString();
+	CurrentBakeSettings.BakedName = InText.ToString();
 }
 
 void FMaterialBakerModule::OnSRGBCheckBoxChanged(ECheckBoxState NewState)
 {
-	bSRGBEnabled = (NewState == ECheckBoxState::Checked);
+	CurrentBakeSettings.bSRGB = (NewState == ECheckBoxState::Checked);
 }
 
 
-FReply FMaterialBakerModule::OnBakeButtonClicked()
+void FMaterialBakerModule::BakeMaterial(const FMaterialBakeSettings& BakeSettings)
 {
-	if (!SelectedMaterial)
-	{
-		// マテリアルが選択されていない場合、ダイアログを表示
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("NoMaterialSelectedWarning", "Please select a material to bake."));
-		return FReply::Handled();
-	}
-
-	if (CustomBakedName.IsEmpty())
-	{
-		// テクスチャ名が空の場合、ダイアログを表示
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("EmptyNameWarning", "Please enter a name for the baked texture."));
-		return FReply::Handled();
-	}
-
-
-	FIntPoint TextureSize(TextureWidth, TextureHeight);
+	FIntPoint TextureSize(BakeSettings.TextureWidth, BakeSettings.TextureHeight);
 
 	UWorld* World = GEditor->GetEditorWorldContext().World();
 	if (!World)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot get world context!"));
-		return FReply::Handled();
+		return;
 	}
 
 	const int32 TotalSteps = 5; // 処理の総ステップ数
-	FScopedSlowTask SlowTask(TotalSteps, LOCTEXT("BakingMaterial", "Baking Material..."));
+	FScopedSlowTask SlowTask(TotalSteps, FText::Format(LOCTEXT("BakingMaterial", "Baking Material: {0}..."), FText::FromString(BakeSettings.BakedName)));
 	SlowTask.MakeDialog(); // プログレスバーのダイアログを表示
 
 	// ステップ1: Render Targetの作成
@@ -411,7 +444,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	if (!RenderTarget)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("CreateRenderTargetFailed", "Failed to create Render Target."));
-		return FReply::Handled();
+		return;
 	}
 
 	RenderTarget->AddToRoot();
@@ -422,7 +455,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 
 	// ステップ2: マテリアルを描画
 	SlowTask.EnterProgressFrame(1, LOCTEXT("DrawMaterial", "Step 2/5: Drawing Material..."));
-	UKismetRenderingLibrary::DrawMaterialToRenderTarget(World, RenderTarget, SelectedMaterial);
+	UKismetRenderingLibrary::DrawMaterialToRenderTarget(World, RenderTarget, BakeSettings.Material);
 
 	// レンダリングコマンドをフラッシュして、描画が完了するのを待つ
 	FlushRenderingCommands();
@@ -435,16 +468,16 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ReadPixelFailed", "Failed to read pixels from Render Target."));
 		RenderTarget->RemoveFromRoot();
-		return FReply::Handled();
+		return;
 	}
 
 
-	if (*SelectedOutputType == "Texture Asset")
+	if (BakeSettings.OutputType == EMaterialBakeOutputType::Texture)
 	{
 		// ステップ4: アセットの作成準備
 		SlowTask.EnterProgressFrame(1, LOCTEXT("PrepareAsset", "Step 4/5: Preparing Asset..."));
-		FString PackagePath = OutputPath;
-		FString AssetName = CustomBakedName;
+		FString PackagePath = BakeSettings.OutputPath;
+		FString AssetName = BakeSettings.BakedName;
 
 		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
 		FString UniquePackageName;
@@ -459,31 +492,12 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 		{
 			FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("CreateTextureFailed", "Failed to create new texture asset."));
 			RenderTarget->RemoveFromRoot();
-			return FReply::Handled();
+			return;
 		}
 		NewTexture->AddToRoot();
 
-		// 選択された圧縮設定を適用
-		const UEnum* CompressionSettingsEnum = StaticEnum<TextureCompressionSettings>();
-		if (CompressionSettingsEnum)
-		{
-			int64 SelectedValue = INDEX_NONE;
-			const FString SelectedDisplayName = *SelectedCompressionSetting.Get();
-			for (int32 i = 0; i < CompressionSettingsEnum->NumEnums() - 1; ++i)
-			{
-				if (SelectedDisplayName == CompressionSettingsEnum->GetDisplayNameTextByIndex(i).ToString())
-				{
-					SelectedValue = CompressionSettingsEnum->GetValueByIndex(i);
-					break;
-				}
-			}
-			if (SelectedValue != INDEX_NONE)
-			{
-				NewTexture->CompressionSettings = static_cast<TextureCompressionSettings>(SelectedValue);
-			}
-		}
-
-		NewTexture->SRGB = bSRGBEnabled;
+		NewTexture->CompressionSettings = BakeSettings.CompressionSettings;
+		NewTexture->SRGB = BakeSettings.bSRGB;
 
 		// ステップ5: テクスチャを更新して保存
 		SlowTask.EnterProgressFrame(1, LOCTEXT("UpdateTexture", "Step 5/5: Updating and Saving Texture..."));
@@ -494,7 +508,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 		NewTexture->PostEditChange();
 		NewTexture->RemoveFromRoot();
 	}
-	else if (*SelectedOutputType == "PNG" || *SelectedOutputType == "JPEG")
+	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG)
 	{
 		// ステップ4: 画像ファイルとしてエクスポート
 		SlowTask.EnterProgressFrame(1, LOCTEXT("ExportImage", "Step 4/5: Exporting Image..."));
@@ -503,7 +517,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 		OutPixels.AddUninitialized(TextureSize.X * TextureSize.Y);
 		for (int32 i = 0; i < RawPixels.Num(); ++i)
 		{
-			OutPixels[i] = FLinearColor(RawPixels[i]).ToFColor(bSRGBEnabled);
+			OutPixels[i] = FLinearColor(RawPixels[i]).ToFColor(BakeSettings.bSRGB);
 		}
 
 		// ファイルダイアログを開く
@@ -511,12 +525,12 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 		if (DesktopPlatform)
 		{
 			TArray<FString> OutFiles;
-			FString Filter = (*SelectedOutputType == "PNG") ? TEXT("PNG Image|*.png") : TEXT("JPEG Image|*.jpg;*.jpeg");
+			FString Filter = (BakeSettings.OutputType == EMaterialBakeOutputType::PNG) ? TEXT("PNG Image|*.png") : TEXT("JPEG Image|*.jpg;*.jpeg");
 			bool bOpened = DesktopPlatform->SaveFileDialog(
 				FSlateApplication::Get().FindBestParentWindowHandleForDialogs(nullptr),
 				TEXT("Save Baked Texture"),
 				FPaths::ProjectSavedDir(),
-				CustomBakedName + ((*SelectedOutputType == "PNG") ? ".png" : ".jpg"),
+				BakeSettings.BakedName + ((BakeSettings.OutputType == EMaterialBakeOutputType::PNG) ? ".png" : ".jpg"),
 				Filter,
 				EFileDialogFlags::None,
 				OutFiles
@@ -526,7 +540,7 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 			{
 				FString SaveFilePath = OutFiles[0];
 				IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
-				EImageFormat ImageFormat = (*SelectedOutputType == "PNG") ? EImageFormat::PNG : EImageFormat::JPEG;
+				EImageFormat ImageFormat = (BakeSettings.OutputType == EMaterialBakeOutputType::PNG) ? EImageFormat::PNG : EImageFormat::JPEG;
 				TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormat);
 
 				if (ImageWrapper.IsValid() && ImageWrapper->SetRaw(OutPixels.GetData(), OutPixels.Num() * sizeof(FColor), TextureSize.X, TextureSize.Y, ERGBFormat::BGRA, 8))
@@ -539,7 +553,70 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 	}
 
 	RenderTarget->RemoveFromRoot();
+}
 
+FReply FMaterialBakerModule::OnBakeButtonClicked()
+{
+	if (BakeQueue.Num() == 0)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("EmptyQueueWarning", "Please add at least one material to the bake queue."));
+		return FReply::Handled();
+	}
+
+	// --- Validation ---
+	TSet<FString> UniqueNames;
+	for (const auto& Settings : BakeQueue)
+	{
+		if (!Settings->Material)
+		{
+			FMessageDialog::Open(EAppMsgType::Ok, FText::Format(LOCTEXT("InvalidMaterialInQueue", "An item in the queue has no material selected."), FText::FromString(Settings->BakedName)));
+			return FReply::Handled();
+		}
+		if (Settings->BakedName.IsEmpty())
+		{
+			FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("EmptyNameInQueue", "An item in the queue has no name."));
+			return FReply::Handled();
+		}
+
+		FString FullPath = FPaths::Combine(Settings->OutputPath, Settings->BakedName);
+		if (UniqueNames.Contains(FullPath))
+		{
+			FMessageDialog::Open(EAppMsgType::Ok, FText::Format(LOCTEXT("DuplicateNameInQueue", "Duplicate output name and path found in queue: {0}"), FText::FromString(FullPath)));
+			return FReply::Handled();
+		}
+		UniqueNames.Add(FullPath);
+	}
+
+
+	FScopedSlowTask SlowTask(BakeQueue.Num(), LOCTEXT("BakingMaterials", "Baking Materials..."));
+	SlowTask.MakeDialog();
+
+	bool bSuccess = true;
+	for (const auto& Settings : BakeQueue)
+	{
+		FText ProgressText = FText::Format(LOCTEXT("BakingMaterialItem", "Baking {0} ({1}/{2})"), FText::FromString(Settings->BakedName), FText::AsNumber(SlowTask.CompletedWork + 1), FText::AsNumber(BakeQueue.Num()));
+		SlowTask.EnterProgressFrame(1, ProgressText);
+
+		if (SlowTask.ShouldCancel())
+		{
+			bSuccess = false;
+			break;
+		}
+
+		BakeMaterial(*Settings);
+	}
+
+	if (bSuccess)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("BakeComplete", "Batch bake completed successfully."));
+	}
+	else
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("BakeCancelled", "Batch bake was cancelled."));
+	}
+
+	BakeQueue.Empty();
+	BakeQueueListView->RequestListRefresh();
 
 	return FReply::Handled();
 }
@@ -547,19 +624,30 @@ FReply FMaterialBakerModule::OnBakeButtonClicked()
 
 void FMaterialBakerModule::OnTextureWidthChanged(int32 NewValue)
 {
-	TextureWidth = NewValue;
+	CurrentBakeSettings.TextureWidth = NewValue;
 }
 
 void FMaterialBakerModule::OnTextureHeightChanged(int32 NewValue)
 {
-	TextureHeight = NewValue;
+	CurrentBakeSettings.TextureHeight = NewValue;
 }
 
 void FMaterialBakerModule::OnCompressionSettingChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
 {
 	if (NewSelection.IsValid())
 	{
-		SelectedCompressionSetting = NewSelection;
+		const UEnum* Enum = StaticEnum<TextureCompressionSettings>();
+		if (Enum)
+		{
+			for (int32 i = 0; i < Enum->NumEnums() - 1; ++i)
+			{
+				if (*NewSelection == Enum->GetDisplayNameTextByIndex(i).ToString())
+				{
+					CurrentBakeSettings.CompressionSettings = static_cast<TextureCompressionSettings>(Enum->GetValueByIndex(i));
+					break;
+				}
+			}
+		}
 	}
 }
 
@@ -572,7 +660,18 @@ void FMaterialBakerModule::OnOutputTypeChanged(TSharedPtr<FString> NewSelection,
 {
 	if (NewSelection.IsValid())
 	{
-		SelectedOutputType = NewSelection;
+		const UEnum* Enum = StaticEnum<EMaterialBakeOutputType>();
+		if (Enum)
+		{
+			for (int32 i = 0; i < Enum->NumEnums(); ++i)
+			{
+				if (*NewSelection == Enum->GetDisplayNameTextByIndex(i).ToString())
+				{
+					CurrentBakeSettings.OutputType = static_cast<EMaterialBakeOutputType>(Enum->GetValueByIndex(i));
+					break;
+				}
+			}
+		}
 	}
 }
 
@@ -583,7 +682,7 @@ TSharedRef<SWidget> FMaterialBakerModule::MakeWidgetForOutputTypeOption(TSharedP
 
 void FMaterialBakerModule::OnOutputPathTextChanged(const FText& InText)
 {
-	OutputPath = InText.ToString();
+	CurrentBakeSettings.OutputPath = InText.ToString();
 }
 
 FReply FMaterialBakerModule::OnBrowseButtonClicked()
@@ -603,13 +702,107 @@ FReply FMaterialBakerModule::OnBrowseButtonClicked()
 		{
 			if (FPaths::MakePathRelativeTo(FolderName, *FPaths::ProjectContentDir()))
 			{
-				OutputPath = FString("/Game/") + FolderName;
+				CurrentBakeSettings.OutputPath = FString("/Game/") + FolderName;
 			}
 			else
 			{
-				OutputPath = FolderName;
+				CurrentBakeSettings.OutputPath = FolderName;
 			}
 		}
+	}
+	return FReply::Handled();
+}
+
+
+FReply FMaterialBakerModule::OnAddToQueueClicked()
+{
+	if (!CurrentBakeSettings.Material)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("NoMaterialForQueue", "Please select a material first."));
+		return FReply::Handled();
+	}
+	if (CurrentBakeSettings.BakedName.IsEmpty())
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("NoNameForQueue", "Please enter a name for the baked texture."));
+		return FReply::Handled();
+	}
+
+	BakeQueue.Add(MakeShared<FMaterialBakeSettings>(CurrentBakeSettings));
+	if (BakeQueueListView.IsValid())
+	{
+		BakeQueueListView->RequestListRefresh();
+	}
+
+	return FReply::Handled();
+}
+
+TSharedRef<ITableRow> FMaterialBakerModule::OnGenerateRowForBakeQueue(TSharedPtr<FMaterialBakeSettings> InItem, const TSharedRef<STableViewBase>& OwnerTable)
+{
+	FString MaterialName = InItem->Material ? InItem->Material->GetName() : TEXT("None");
+	FString BakedName = InItem->BakedName;
+
+	return SNew(STableRow<TSharedPtr<FMaterialBakeSettings>>, OwnerTable)
+		.Padding(2.0f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.FillWidth(0.5f)
+			[
+				SNew(STextBlock).Text(FText::FromString(MaterialName))
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(0.5f)
+			[
+				SNew(STextBlock).Text(FText::FromString(BakedName))
+			]
+		];
+}
+
+void FMaterialBakerModule::OnBakeQueueSelectionChanged(TSharedPtr<FMaterialBakeSettings> InItem, ESelectInfo::Type SelectInfo)
+{
+	if (InItem.IsValid())
+	{
+		SelectedQueueItem = InItem;
+		CurrentBakeSettings = *InItem;
+
+		if (ThumbnailBox.IsValid() && CurrentBakeSettings.Material)
+		{
+			FAssetData AssetData(CurrentBakeSettings.Material);
+			TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, 64, 64, ThumbnailPool));
+			ThumbnailBox->SetContent(Thumbnail->MakeThumbnailWidget());
+		}
+		else if (ThumbnailBox.IsValid())
+		{
+			ThumbnailBox->SetContent(
+				SNew(SBorder)
+				.Padding(4.f)
+				[
+					SNew(STextBlock)
+					.Text(LOCTEXT("NoMaterialSelected", "No Material Selected"))
+					.Justification(ETextJustify::Center)
+				]
+			);
+		}
+	}
+}
+
+FReply FMaterialBakerModule::OnRemoveSelectedClicked()
+{
+	if (SelectedQueueItem.IsValid())
+	{
+		BakeQueue.Remove(SelectedQueueItem);
+		SelectedQueueItem.Reset();
+		BakeQueueListView->RequestListRefresh();
+	}
+	return FReply::Handled();
+}
+
+FReply FMaterialBakerModule::OnUpdateSelectedClicked()
+{
+	if (SelectedQueueItem.IsValid())
+	{
+		*SelectedQueueItem = CurrentBakeSettings;
+		BakeQueueListView->RequestListRefresh();
 	}
 	return FReply::Handled();
 }
