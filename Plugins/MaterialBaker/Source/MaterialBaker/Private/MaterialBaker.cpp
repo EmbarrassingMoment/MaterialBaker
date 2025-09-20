@@ -482,7 +482,7 @@ void FMaterialBakerModule::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
 		FString UniquePackageName;
 		FString UniqueAssetName;
-		AssetToolsModule.Get().CreateUniqueAssetName(PackagePath / AssetName, TEXT(""), UniquePackageName, UniqueAssetName);
+		AssetToolsModule.Get().CreateUniqueAssetName(BakeSettings.OutputPath / AssetName, TEXT(""), UniquePackageName, UniqueAssetName);
 
 		UPackage* Package = CreatePackage(*UniquePackageName);
 		Package->FullyLoad();
