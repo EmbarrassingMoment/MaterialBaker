@@ -35,7 +35,7 @@ struct FMaterialBakeSettings
 	TEnumAsByte<TextureCompressionSettings> CompressionSettings = TEnumAsByte<TextureCompressionSettings>(TC_Default);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Baker")
-	bool bSRGB = true;
+	bool bSRGB = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Baker")
 	EMaterialBakeOutputType OutputType = EMaterialBakeOutputType::Texture;
