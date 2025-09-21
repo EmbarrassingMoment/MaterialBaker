@@ -387,6 +387,16 @@ void FMaterialBakerModule::OnMaterialChanged(const FAssetData& AssetData)
 	if (CurrentBakeSettings.Material)
 	{
 		CurrentBakeSettings.OutputPath = FPackageName::GetLongPackagePath(CurrentBakeSettings.Material->GetPathName());
+
+		FString MaterialName = CurrentBakeSettings.Material->GetName();
+		if (MaterialName.StartsWith(TEXT("M_")))
+		{
+			CurrentBakeSettings.BakedName = TEXT("T_") + MaterialName.RightChop(2);
+		}
+		else
+		{
+			CurrentBakeSettings.BakedName = TEXT("T_") + MaterialName;
+		}
 	}
 
 
