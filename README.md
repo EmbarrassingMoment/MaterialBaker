@@ -14,7 +14,7 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 *   **Custom Texture Size:** Set the width and height of the output texture.
 *   **Compression Settings:** Choose the desired compression format for your texture.
 *   **sRGB Toggle:** Enable or disable sRGB based on your needs.
-*   **Output Format Selection:** Choose the output file format (e.g., PNG, JPEG).
+*   **Output Format Selection:** Choose the output file format (e.g., PNG, JPEG, TGA).
 *   **Detailed Progress Display:** Shows detailed progress during the baking process.
 
 ## How to Use
@@ -26,7 +26,7 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 5.  To remove an item, select it and click the **Remove Selected** button.
 6.  Repeat the process to add more materials to the queue.
 7.  Once you have added all the materials you want to bake, click the **Bake All** button.
-8.  The plugin will process all materials in the queue. If the output type is set to **Texture Asset**, new textures will be created in the specified project path. If it's set to **PNG** or **JPEG**, you will be prompted to save each file on your computer.
+8.  The plugin will process all materials in the queue. If the output type is set to **Texture Asset**, new textures will be created in the specified project path. If it's set to **PNG**, **JPEG**, or **TGA**, you will be prompted to save each file on your computer.
 
 ## Requirements
 
@@ -66,7 +66,7 @@ This plugin is licensed under the [MIT License](LICENSE).
 *   **カスタムテクスチャサイズ:** 出力するテクスチャの幅と高さを自由に設定できます。
 *   **圧縮設定:** テクスチャに適した圧縮形式を選択できます。
 *   **sRGB切り替え:** 必要に応じてsRGBの有効/無効を切り替えられます。
-*   **出力形式の選択:** 出力するファイル形式（例：PNG、JPEG）を選択できます。
+*   **出力形式の選択:** 出力するファイル形式（例：PNG、JPEG、TGA）を選択できます。
 *   **詳細な進捗表示:** ベイク処理中に詳細な進捗状況を表示します。
 
 ## 使い方
@@ -78,7 +78,7 @@ This plugin is licensed under the [MIT License](LICENSE).
 5.  アイテムを削除するには、それを選択して **「Remove Selected」** ボタンをクリックします。
 6.  このプロセスを繰り返して、さらにマテリアルをキューに追加します。
 7.  ベイクしたいすべてのマテリアルを追加したら、 **「Bake All」** ボタンをクリックします。
-8.  プラグインがキュー内のすべてのマテリアルを処理します。出力タイプが **「Texture Asset」** に設定されている場合、指定したプロジェクトパスに新しいテクスチャが作成されます。 **「PNG」** または **「JPEG」** に設定されている場合は、各ファイルをコンピューターに保存するよう求められます。
+8.  プラグインがキュー内のすべてのマテリアルを処理します。出力タイプが **「Texture Asset」** に設定されている場合、指定したプロジェクトパスに新しいテクスチャが作成されます。 **「PNG」** 、 **「JPEG」** 、または **「TGA」** に設定されている場合は、各ファイルをコンピューターに保存するよう求められます。
 
 ## 要件
 
