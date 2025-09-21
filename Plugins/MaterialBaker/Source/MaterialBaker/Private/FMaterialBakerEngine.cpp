@@ -108,7 +108,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		NewTexture->PostEditChange();
 		NewTexture->RemoveFromRoot();
 	}
-	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG)
+	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA)
 	{
 		// ステップ4: 画像ファイルとしてエクスポート
 		SlowTask.EnterProgressFrame(1, LOCTEXT("ExportImage", "Step 4/5: Exporting Image..."));
@@ -125,12 +125,33 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		if (DesktopPlatform)
 		{
 			TArray<FString> OutFiles;
-			FString Filter = (BakeSettings.OutputType == EMaterialBakeOutputType::PNG) ? TEXT("PNG Image|*.png") : TEXT("JPEG Image|*.jpg;*.jpeg");
+			FString Filter;
+			FString DefaultExtension;
+
+			switch (BakeSettings.OutputType)
+			{
+			case EMaterialBakeOutputType::PNG:
+				Filter = TEXT("PNG Image|*.png");
+				DefaultExtension = TEXT(".png");
+				break;
+			case EMaterialBakeOutputType::JPEG:
+				Filter = TEXT("JPEG Image|*.jpg;*.jpeg");
+				DefaultExtension = TEXT(".jpg");
+				break;
+			case EMaterialBakeOutputType::TGA:
+				Filter = TEXT("TGA Image|*.tga");
+				DefaultExtension = TEXT(".tga");
+				break;
+			default:
+				// Should not happen
+				break;
+			}
+
 			bool bOpened = DesktopPlatform->SaveFileDialog(
 				FSlateApplication::Get().FindBestParentWindowHandleForDialogs(nullptr),
 				TEXT("Save Baked Texture"),
 				FPaths::ProjectSavedDir(),
-				BakeSettings.BakedName + ((BakeSettings.OutputType == EMaterialBakeOutputType::PNG) ? ".png" : ".jpg"),
+				BakeSettings.BakedName + DefaultExtension,
 				Filter,
 				EFileDialogFlags::None,
 				OutFiles
@@ -140,7 +161,24 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			{
 				FString SaveFilePath = OutFiles[0];
 				IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
-				EImageFormat ImageFormat = (BakeSettings.OutputType == EMaterialBakeOutputType::PNG) ? EImageFormat::PNG : EImageFormat::JPEG;
+
+				EImageFormat ImageFormat;
+				switch (BakeSettings.OutputType)
+				{
+				case EMaterialBakeOutputType::PNG:
+					ImageFormat = EImageFormat::PNG;
+					break;
+				case EMaterialBakeOutputType::JPEG:
+					ImageFormat = EImageFormat::JPEG;
+					break;
+				case EMaterialBakeOutputType::TGA:
+					ImageFormat = EImageFormat::TGA;
+					break;
+				default:
+					// Should not happen
+					return false;
+				}
+
 				TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormat);
 
 				if (ImageWrapper.IsValid() && ImageWrapper->SetRaw(OutPixels.GetData(), OutPixels.Num() * sizeof(FColor), TextureSize.X, TextureSize.Y, ERGBFormat::BGRA, 8))
