@@ -518,7 +518,7 @@ void FMaterialBakerModule::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		NewTexture->PostEditChange();
 		NewTexture->RemoveFromRoot();
 	}
-	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG)
+	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA)
 	{
 		// ステップ4: 画像ファイルとしてエクスポート
 		SlowTask.EnterProgressFrame(1, LOCTEXT("ExportImage", "Step 4/5: Exporting Image..."));
@@ -535,12 +535,34 @@ void FMaterialBakerModule::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		if (DesktopPlatform)
 		{
 			TArray<FString> OutFiles;
-			FString Filter = (BakeSettings.OutputType == EMaterialBakeOutputType::PNG) ? TEXT("PNG Image|*.png") : TEXT("JPEG Image|*.jpg;*.jpeg");
+			FString Filter;
+			FString Extension;
+			EImageFormat ImageFormat;
+
+			if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG)
+			{
+				Filter = TEXT("PNG Image|*.png");
+				Extension = TEXT(".png");
+				ImageFormat = EImageFormat::PNG;
+			}
+			else if (BakeSettings.OutputType == EMaterialBakeOutputType::JPEG)
+			{
+				Filter = TEXT("JPEG Image|*.jpg;*.jpeg");
+				Extension = TEXT(".jpg");
+				ImageFormat = EImageFormat::JPEG;
+			}
+			else // TGA
+			{
+				Filter = TEXT("TGA Image|*.tga");
+				Extension = TEXT(".tga");
+				ImageFormat = EImageFormat::TGA;
+			}
+
 			bool bOpened = DesktopPlatform->SaveFileDialog(
 				FSlateApplication::Get().FindBestParentWindowHandleForDialogs(nullptr),
 				TEXT("Save Baked Texture"),
 				FPaths::ProjectSavedDir(),
-				BakeSettings.BakedName + ((BakeSettings.OutputType == EMaterialBakeOutputType::PNG) ? ".png" : ".jpg"),
+				BakeSettings.BakedName + Extension,
 				Filter,
 				EFileDialogFlags::None,
 				OutFiles
@@ -550,7 +572,6 @@ void FMaterialBakerModule::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			{
 				FString SaveFilePath = OutFiles[0];
 				IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
-				EImageFormat ImageFormat = (BakeSettings.OutputType == EMaterialBakeOutputType::PNG) ? EImageFormat::PNG : EImageFormat::JPEG;
 				TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormat);
 
 				if (ImageWrapper.IsValid() && ImageWrapper->SetRaw(OutPixels.GetData(), OutPixels.Num() * sizeof(FColor), TextureSize.X, TextureSize.Y, ERGBFormat::BGRA, 8))

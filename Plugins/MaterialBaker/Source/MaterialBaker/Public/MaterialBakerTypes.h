@@ -12,6 +12,7 @@ enum class EMaterialBakeOutputType : uint8
 	Texture UMETA(DisplayName = "Texture Asset"),
 	PNG UMETA(DisplayName = "PNG"),
 	JPEG UMETA(DisplayName = "JPEG"),
+	TGA UMETA(DisplayName = "TGA"),
 };
 
 USTRUCT(BlueprintType)
