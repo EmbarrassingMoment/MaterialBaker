@@ -8,7 +8,7 @@
 #include "Widgets/Views/SListView.h"
 
 class FAssetThumbnailPool;
-class FAssetData;
+struct FAssetData;
 struct FMaterialBakeSettings;
 
 

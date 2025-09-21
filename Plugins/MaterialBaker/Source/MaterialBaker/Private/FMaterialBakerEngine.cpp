@@ -5,6 +5,7 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Kismet/KismetRenderingLibrary.h"
 #include "IAssetTools.h"
+#include "AssetToolsModule.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Factories/TextureFactory.h"
 #include "Misc/FileHelper.h"
