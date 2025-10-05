@@ -120,73 +120,60 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			OutPixels[i] = FLinearColor(RawPixels[i]).ToFColor(BakeSettings.bSRGB);
 		}
 
-		// ファイルダイアログを開く
-		IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
-		if (DesktopPlatform)
+		FString Extension;
+		EImageFormat ImageFormat;
+		switch (BakeSettings.OutputType)
 		{
-			TArray<FString> OutFiles;
-			FString Filter;
-			FString DefaultExtension;
+		case EMaterialBakeOutputType::PNG:
+			Extension = TEXT(".png");
+			ImageFormat = EImageFormat::PNG;
+			break;
+		case EMaterialBakeOutputType::JPEG:
+			Extension = TEXT(".jpg");
+			ImageFormat = EImageFormat::JPEG;
+			break;
+		case EMaterialBakeOutputType::TGA:
+			Extension = TEXT(".tga");
+			ImageFormat = EImageFormat::TGA;
+			break;
+		default:
+			// Should not happen
+			return false;
+		}
 
-			switch (BakeSettings.OutputType)
+		FString SaveFilePath = FPaths::Combine(BakeSettings.OutputPath, BakeSettings.BakedName + Extension);
+		if (SaveFilePath.StartsWith(TEXT("/Game/")))
+		{
+			FString ContentDir = FPaths::ProjectContentDir();
+			SaveFilePath = SaveFilePath.RightChop(6); // Remove "/Game/"
+			SaveFilePath = FPaths::Combine(ContentDir, SaveFilePath);
+		}
+
+		IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
+		TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormat);
+
+		if (ImageWrapper.IsValid() && ImageWrapper->SetRaw(OutPixels.GetData(), OutPixels.Num() * sizeof(FColor), TextureSize.X, TextureSize.Y, ERGBFormat::BGRA, 8))
+		{
+			// ディレクトリが存在しない場合は作成
+			FString DirectoryPath = FPaths::GetPath(SaveFilePath);
+			if (!FPaths::DirectoryExists(DirectoryPath))
 			{
-			case EMaterialBakeOutputType::PNG:
-				Filter = TEXT("PNG Image|*.png");
-				DefaultExtension = TEXT(".png");
-				break;
-			case EMaterialBakeOutputType::JPEG:
-				Filter = TEXT("JPEG Image|*.jpg;*.jpeg");
-				DefaultExtension = TEXT(".jpg");
-				break;
-			case EMaterialBakeOutputType::TGA:
-				Filter = TEXT("TGA Image|*.tga");
-				DefaultExtension = TEXT(".tga");
-				break;
-			default:
-				// Should not happen
-				break;
+				FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*DirectoryPath);
 			}
 
-			bool bOpened = DesktopPlatform->SaveFileDialog(
-				FSlateApplication::Get().FindBestParentWindowHandleForDialogs(nullptr),
-				TEXT("Save Baked Texture"),
-				FPaths::ProjectSavedDir(),
-				BakeSettings.BakedName + DefaultExtension,
-				Filter,
-				EFileDialogFlags::None,
-				OutFiles
-			);
-
-			if (bOpened && OutFiles.Num() > 0)
+			const TArray64<uint8>& CompressedData = ImageWrapper->GetCompressed();
+			if (!FFileHelper::SaveArrayToFile(CompressedData, *SaveFilePath))
 			{
-				FString SaveFilePath = OutFiles[0];
-				IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
-
-				EImageFormat ImageFormat;
-				switch (BakeSettings.OutputType)
-				{
-				case EMaterialBakeOutputType::PNG:
-					ImageFormat = EImageFormat::PNG;
-					break;
-				case EMaterialBakeOutputType::JPEG:
-					ImageFormat = EImageFormat::JPEG;
-					break;
-				case EMaterialBakeOutputType::TGA:
-					ImageFormat = EImageFormat::TGA;
-					break;
-				default:
-					// Should not happen
-					return false;
-				}
-
-				TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormat);
-
-				if (ImageWrapper.IsValid() && ImageWrapper->SetRaw(OutPixels.GetData(), OutPixels.Num() * sizeof(FColor), TextureSize.X, TextureSize.Y, ERGBFormat::BGRA, 8))
-				{
-					const TArray64<uint8>& CompressedData = ImageWrapper->GetCompressed();
-					FFileHelper::SaveArrayToFile(CompressedData, *SaveFilePath);
-				}
+				FMessageDialog::Open(EAppMsgType::Ok, FText::Format(LOCTEXT("SaveImageFailed", "Failed to save image to {0}."), FText::FromString(SaveFilePath)));
+				RenderTarget->RemoveFromRoot();
+				return false;
 			}
+		}
+		else
+		{
+			FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ImageWrapperFailed", "Failed to create or set image wrapper."));
+			RenderTarget->RemoveFromRoot();
+			return false;
 		}
 	}
 
