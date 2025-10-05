@@ -93,34 +93,6 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs)
 		.Padding(5.0f)
 		[
 			SNew(STextBlock)
-			.Text(LOCTEXT("BitDepthLabel", "Bit Depth"))
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(5.0f)
-		[
-			SNew(SComboBox<TSharedPtr<FString>>)
-			.OptionsSource(&BitDepthOptions)
-			.OnSelectionChanged(this, &SMaterialBakerWidget::OnBitDepthChanged)
-			.OnGenerateWidget(this, &SMaterialBakerWidget::MakeWidgetForBitDepthOption)
-			.InitiallySelectedItem(BitDepthOptions.Num() > 0 ? BitDepthOptions[1] : nullptr) // Default to 16-bit
-			[
-				SNew(STextBlock)
-				.Text_Lambda([this] {
-					const UEnum* Enum = StaticEnum<EMaterialBakeBitDepth>();
-					if (Enum)
-					{
-						return Enum->GetDisplayNameTextByValue((int64)CurrentBakeSettings.BitDepth);
-					}
-					return FText::GetEmpty();
-				})
-			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(5.0f)
-		[
-			SNew(STextBlock)
 			.Text(LOCTEXT("SelectMaterialLabel", "Target Material"))
 		]
 		+ SVerticalBox::Slot()
@@ -237,6 +209,34 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs)
 					if (Enum)
 					{
 						return Enum->GetDisplayNameTextByValue(CurrentBakeSettings.CompressionSettings);
+					}
+					return FText::GetEmpty();
+				})
+			]
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(STextBlock)
+			.Text(LOCTEXT("BitDepthLabel", "Bit Depth"))
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(SComboBox<TSharedPtr<FString>>)
+			.OptionsSource(&BitDepthOptions)
+			.OnSelectionChanged(this, &SMaterialBakerWidget::OnBitDepthChanged)
+			.OnGenerateWidget(this, &SMaterialBakerWidget::MakeWidgetForBitDepthOption)
+			.InitiallySelectedItem(BitDepthOptions.Num() > 0 ? BitDepthOptions[1] : nullptr) // Default to 16-bit
+			[
+				SNew(STextBlock)
+				.Text_Lambda([this] {
+					const UEnum* Enum = StaticEnum<EMaterialBakeBitDepth>();
+					if (Enum)
+					{
+						return Enum->GetDisplayNameTextByValue((int64)CurrentBakeSettings.BitDepth);
 					}
 					return FText::GetEmpty();
 				})
