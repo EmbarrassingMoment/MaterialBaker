@@ -15,6 +15,13 @@ enum class EMaterialBakeOutputType : uint8
 	TGA UMETA(DisplayName = "TGA"),
 };
 
+UENUM(BlueprintType)
+enum class EMaterialBakeBitDepth : uint8
+{
+	Bake_8Bit UMETA(DisplayName = "8-bit"),
+	Bake_16Bit UMETA(DisplayName = "16-bit"),
+};
+
 USTRUCT(BlueprintType)
 struct FMaterialBakeSettings
 {
@@ -40,6 +47,9 @@ struct FMaterialBakeSettings
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Baker")
 	EMaterialBakeOutputType OutputType = EMaterialBakeOutputType::Texture;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Baker")
+	EMaterialBakeBitDepth BitDepth = EMaterialBakeBitDepth::Bake_16Bit;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Baker")
 	FString OutputPath;

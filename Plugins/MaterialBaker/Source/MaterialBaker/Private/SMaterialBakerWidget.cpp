@@ -48,6 +48,16 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs)
 		}
 	}
 
+	// Initialize bit depth options
+	const UEnum* BitDepthEnum = StaticEnum<EMaterialBakeBitDepth>();
+	if (BitDepthEnum)
+	{
+		for (int32 i = 0; i < BitDepthEnum->NumEnums(); ++i)
+		{
+			BitDepthOptions.Add(MakeShareable(new FString(BitDepthEnum->GetDisplayNameTextByIndex(i).ToString())));
+		}
+	}
+
 
 	// -- UI Layout --
 
@@ -78,6 +88,34 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs)
 	ChildSlot
 	[
 		SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(STextBlock)
+			.Text(LOCTEXT("BitDepthLabel", "Bit Depth"))
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(SComboBox<TSharedPtr<FString>>)
+			.OptionsSource(&BitDepthOptions)
+			.OnSelectionChanged(this, &SMaterialBakerWidget::OnBitDepthChanged)
+			.OnGenerateWidget(this, &SMaterialBakerWidget::MakeWidgetForBitDepthOption)
+			.InitiallySelectedItem(BitDepthOptions.Num() > 0 ? BitDepthOptions[1] : nullptr) // Default to 16-bit
+			[
+				SNew(STextBlock)
+				.Text_Lambda([this] {
+					const UEnum* Enum = StaticEnum<EMaterialBakeBitDepth>();
+					if (Enum)
+					{
+						return Enum->GetDisplayNameTextByValue((int64)CurrentBakeSettings.BitDepth);
+					}
+					return FText::GetEmpty();
+				})
+			]
+		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
@@ -437,6 +475,30 @@ void SMaterialBakerWidget::OnOutputTypeChanged(TSharedPtr<FString> NewSelection,
 }
 
 TSharedRef<SWidget> SMaterialBakerWidget::MakeWidgetForOutputTypeOption(TSharedPtr<FString> InOption)
+{
+	return SNew(STextBlock).Text(FText::FromString(*InOption));
+}
+
+void SMaterialBakerWidget::OnBitDepthChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
+{
+	if (NewSelection.IsValid())
+	{
+		const UEnum* Enum = StaticEnum<EMaterialBakeBitDepth>();
+		if (Enum)
+		{
+			for (int32 i = 0; i < Enum->NumEnums(); ++i)
+			{
+				if (*NewSelection == Enum->GetDisplayNameTextByIndex(i).ToString())
+				{
+					CurrentBakeSettings.BitDepth = static_cast<EMaterialBakeBitDepth>(Enum->GetValueByIndex(i));
+					break;
+				}
+			}
+		}
+	}
+}
+
+TSharedRef<SWidget> SMaterialBakerWidget::MakeWidgetForBitDepthOption(TSharedPtr<FString> InOption)
 {
 	return SNew(STextBlock).Text(FText::FromString(*InOption));
 }
