@@ -60,11 +60,6 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		RenderTargetFormat = RTF_RGBA8;
 		BitDepthValue = 8;
 		break;
-	case EMaterialBakeBitDepth::Bake_32Bit:
-		PixelFormat = PF_A32B32G32R32F;
-		RenderTargetFormat = RTF_RGBA32f;
-		BitDepthValue = 32;
-		break;
 	case EMaterialBakeBitDepth::Bake_16Bit:
 	default:
 		PixelFormat = PF_FloatRGBA;
@@ -114,16 +109,6 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			FMemory::Memcpy(RawPixels.GetData(), Pixels.GetData(), RawPixels.Num());
 		}
 	}
-	else // 32-bit
-	{
-		TArray<FLinearColor> Pixels;
-		bReadSuccess = RenderTargetResource->ReadLinearColorPixels(Pixels);
-		if (bReadSuccess)
-		{
-			RawPixels.SetNum(Pixels.Num() * sizeof(FLinearColor));
-			FMemory::Memcpy(RawPixels.GetData(), Pixels.GetData(), RawPixels.Num());
-		}
-	}
 
 	if (!bReadSuccess)
 	{
@@ -164,9 +149,6 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		case EMaterialBakeBitDepth::Bake_8Bit:
 			TextureFormat = TSF_BGRA8;
 			break;
-		case EMaterialBakeBitDepth::Bake_32Bit:
-			TextureFormat = TSF_A32B32G32R32F;
-			break;
 		case EMaterialBakeBitDepth::Bake_16Bit:
 		default:
 			TextureFormat = TSF_RGBA16F;
@@ -181,7 +163,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		NewTexture->PostEditChange();
 		NewTexture->RemoveFromRoot();
 	}
-	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA || BakeSettings.OutputType == EMaterialBakeOutputType::EXR)
+	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA)
 	{
 		SlowTask.EnterProgressFrame(1, LOCTEXT("ExportImage", "Step 4/5: Exporting Image..."));
 
@@ -205,11 +187,6 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			Extension = TEXT(".tga");
 			ImageFormat = EImageFormat::TGA;
 			break;
-		case EMaterialBakeOutputType::EXR:
-			Extension = TEXT(".exr");
-			ImageFormat = EImageFormat::EXR;
-			RGBFormat = ERGBFormat::RGBA;
-			break;
 		default:
 			return false;
 		}
@@ -227,14 +204,6 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 				for (int32 i = 0; i < TempPixels.Num(); ++i)
 				{
 					TempPixels[i] = FLinearColor(Src[i]).ToFColor(BakeSettings.bSRGB);
-				}
-			}
-			else // 32-bit
-			{
-				const FLinearColor* Src = reinterpret_cast<const FLinearColor*>(RawPixels.GetData());
-				for (int32 i = 0; i < TempPixels.Num(); ++i)
-				{
-					TempPixels[i] = Src[i].ToFColor(BakeSettings.bSRGB);
 				}
 			}
 			ExportPixels.SetNum(TempPixels.Num() * sizeof(FColor));

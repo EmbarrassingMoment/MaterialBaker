@@ -13,7 +13,6 @@ enum class EMaterialBakeOutputType : uint8
 	PNG UMETA(DisplayName = "PNG"),
 	JPEG UMETA(DisplayName = "JPEG"),
 	TGA UMETA(DisplayName = "TGA"),
-	EXR UMETA(DisplayName = "EXR"),
 };
 
 UENUM(BlueprintType)
@@ -21,7 +20,6 @@ enum class EMaterialBakeBitDepth : uint8
 {
 	Bake_8Bit UMETA(DisplayName = "8-bit"),
 	Bake_16Bit UMETA(DisplayName = "16-bit"),
-	Bake_32Bit UMETA(DisplayName = "32-bit"),
 };
 
 USTRUCT(BlueprintType)
