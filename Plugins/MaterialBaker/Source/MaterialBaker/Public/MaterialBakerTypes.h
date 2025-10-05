@@ -22,6 +22,17 @@ enum class EMaterialBakeBitDepth : uint8
 	Bake_16Bit UMETA(DisplayName = "16-bit"),
 };
 
+UENUM(BlueprintType)
+enum class EMaterialPropertyType : uint8
+{
+	FinalColor UMETA(DisplayName = "Final Color"),
+	BaseColor UMETA(DisplayName = "Base Color"),
+	Normal UMETA(DisplayName = "Normal"),
+	Roughness UMETA(DisplayName = "Roughness"),
+	Metallic UMETA(DisplayName = "Metallic"),
+	Specular UMETA(DisplayName = "Specular"),
+};
+
 USTRUCT(BlueprintType)
 struct FMaterialBakeSettings
 {
@@ -50,6 +61,9 @@ struct FMaterialBakeSettings
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Baker")
 	EMaterialBakeBitDepth BitDepth = EMaterialBakeBitDepth::Bake_16Bit;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Baker")
+	EMaterialPropertyType PropertyType = EMaterialPropertyType::FinalColor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Baker")
 	FString OutputPath;

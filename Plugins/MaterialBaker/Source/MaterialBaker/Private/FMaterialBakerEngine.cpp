@@ -19,6 +19,13 @@
 #include "Misc/MessageDialog.h"
 #include "Engine/Texture.h"
 #include "UObject/EnumProperty.h"
+#include "Engine/SceneCapture2D.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Engine/StaticMeshActor.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
+
 
 #define LOCTEXT_NAMESPACE "FMaterialBakerModule"
 
@@ -33,11 +40,11 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		return false;
 	}
 
-	const int32 TotalSteps = 5; // 処理の総ステップ数
+	const int32 TotalSteps = 5; // Total number of steps for the progress bar
 	FScopedSlowTask SlowTask(TotalSteps, FText::Format(LOCTEXT("BakingMaterial", "Baking Material: {0}..."), FText::FromString(BakeSettings.BakedName)));
-	SlowTask.MakeDialog(); // プログレスバーのダイアログを表示
+	SlowTask.MakeDialog();
 
-	// ステップ1: Render Targetの作成
+	// Step 1: Create Render Target
 	SlowTask.EnterProgressFrame(1, LOCTEXT("CreateRenderTarget", "Step 1/5: Creating Render Target..."));
 
 	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>();
@@ -46,7 +53,6 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("CreateRenderTargetFailed", "Failed to create Render Target."));
 		return false;
 	}
-
 	RenderTarget->AddToRoot();
 
 	EPixelFormat PixelFormat;
@@ -68,16 +74,92 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		break;
 	}
 
+	const bool bIsHdr = BakeSettings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit;
+	bool bIsColorData = BakeSettings.PropertyType == EMaterialPropertyType::FinalColor || BakeSettings.PropertyType == EMaterialPropertyType::BaseColor;
+	bool bSRGB = bIsColorData && BakeSettings.bSRGB;
+
 	RenderTarget->RenderTargetFormat = RenderTargetFormat;
-	RenderTarget->InitCustomFormat(TextureSize.X, TextureSize.Y, PixelFormat, true);
+	RenderTarget->bForceLinearGamma = !bSRGB;
+	RenderTarget->InitCustomFormat(TextureSize.X, TextureSize.Y, PixelFormat, !bSRGB);
 	RenderTarget->UpdateResourceImmediate(true);
 
-	// ステップ2: マテリアルを描画
+	// Step 2: Draw Material
 	SlowTask.EnterProgressFrame(1, LOCTEXT("DrawMaterial", "Step 2/5: Drawing Material..."));
-	UKismetRenderingLibrary::DrawMaterialToRenderTarget(World, RenderTarget, BakeSettings.Material);
+
+	if (BakeSettings.PropertyType == EMaterialPropertyType::FinalColor)
+	{
+		UKismetRenderingLibrary::DrawMaterialToRenderTarget(World, RenderTarget, BakeSettings.Material);
+	}
+	else
+	{
+		// Scene Capture path for specific properties
+		UStaticMesh* PlaneMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane"));
+		if (!PlaneMesh)
+		{
+			FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("PlaneMeshNotFound", "Could not find /Engine/BasicShapes/Plane.Plane"));
+			RenderTarget->RemoveFromRoot();
+			return false;
+		}
+
+		AStaticMeshActor* MeshActor = World->SpawnActor<AStaticMeshActor>();
+		MeshActor->SetActorLocation(FVector(0, 0, 0));
+		MeshActor->GetStaticMeshComponent()->SetStaticMesh(PlaneMesh);
+		MeshActor->GetStaticMeshComponent()->SetMaterial(0, BakeSettings.Material);
+
+		ASceneCapture2D* CaptureActor = World->SpawnActor<ASceneCapture2D>();
+		USceneCaptureComponent2D* CaptureComponent = CaptureActor->GetCaptureComponent2D();
+
+		CaptureActor->SetActorLocation(FVector(0, 0, 100.0f));
+		CaptureActor->SetActorRotation(FRotator(-90.f, 0.f, -90.f));
+
+		CaptureComponent->TextureTarget = RenderTarget;
+		CaptureComponent->ProjectionType = ECameraProjectionMode::Orthographic;
+		CaptureComponent->OrthoWidth = 200; // Default plane is 200x200
+		CaptureComponent->bCaptureEveryFrame = false;
+		CaptureComponent->bCaptureOnMovement = false;
+		CaptureComponent->ShowFlags.SetAtmosphere(false);
+		CaptureComponent->ShowFlags.SetFog(false);
+		CaptureComponent->ShowFlags.SetAmbientOcclusion(false);
+		CaptureComponent->ShowFlags.SetScreenSpaceReflections(false);
+		CaptureComponent->ShowFlags.SetLighting(false);
+		CaptureComponent->ShowFlags.SetPostProcessing(false);
+		CaptureComponent->CaptureSource = bIsHdr ? SCS_FinalColorHDR : SCS_FinalColorLDR;
+
+		switch (BakeSettings.PropertyType)
+		{
+		case EMaterialPropertyType::BaseColor:
+			CaptureComponent->CaptureSource = SCS_BaseColor;
+			break;
+		case EMaterialPropertyType::Normal:
+			CaptureComponent->CaptureSource = SCS_Normal;
+			break;
+		case EMaterialPropertyType::Roughness:
+			CaptureComponent->CaptureSource = SCS_BufferVisualizationDump;
+			CaptureComponent->PostProcessSettings.bOverride_BufferVisualizationTarget = true;
+			CaptureComponent->PostProcessSettings.BufferVisualizationTarget = FName(TEXT("GBufferRoughness"));
+			break;
+		case EMaterialPropertyType::Metallic:
+			CaptureComponent->CaptureSource = SCS_BufferVisualizationDump;
+			CaptureComponent->PostProcessSettings.bOverride_BufferVisualizationTarget = true;
+			CaptureComponent->PostProcessSettings.BufferVisualizationTarget = FName(TEXT("GBufferMetallic"));
+			break;
+		case EMaterialPropertyType::Specular:
+			CaptureComponent->CaptureSource = SCS_BufferVisualizationDump;
+			CaptureComponent->PostProcessSettings.bOverride_BufferVisualizationTarget = true;
+			CaptureComponent->PostProcessSettings.BufferVisualizationTarget = FName(TEXT("GBufferSpecular"));
+			break;
+		default:
+			break;
+		}
+
+		CaptureComponent->CaptureScene();
+
+		MeshActor->Destroy();
+		CaptureActor->Destroy();
+	}
 	FlushRenderingCommands();
 
-	// ステップ3: ピクセルデータを読み込み
+	// Step 3: Read Pixels
 	SlowTask.EnterProgressFrame(1, LOCTEXT("ReadPixels", "Step 3/5: Reading Pixels..."));
 	FRenderTarget* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
 	if (!RenderTargetResource)
@@ -120,7 +202,6 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 	if (BakeSettings.OutputType == EMaterialBakeOutputType::Texture)
 	{
 		SlowTask.EnterProgressFrame(1, LOCTEXT("PrepareAsset", "Step 4/5: Preparing Asset..."));
-		FString PackagePath = BakeSettings.OutputPath;
 		FString AssetName = BakeSettings.BakedName;
 
 		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
@@ -141,7 +222,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		NewTexture->AddToRoot();
 
 		NewTexture->CompressionSettings = BakeSettings.CompressionSettings;
-		NewTexture->SRGB = BakeSettings.bSRGB;
+		NewTexture->SRGB = bSRGB;
 
 		ETextureSourceFormat TextureFormat;
 		switch (BakeSettings.BitDepth)
@@ -181,7 +262,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		case EMaterialBakeOutputType::JPEG:
 			Extension = TEXT(".jpg");
 			ImageFormat = EImageFormat::JPEG;
-			ExportBitDepth = 8; // JPEG is always 8-bit
+			ExportBitDepth = 8;
 			break;
 		case EMaterialBakeOutputType::TGA:
 			Extension = TEXT(".tga");
@@ -191,31 +272,25 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			return false;
 		}
 
-		// Convert pixel data if necessary
 		TArray<uint8> ExportPixels = RawPixels;
-		if (BakeSettings.OutputType == EMaterialBakeOutputType::JPEG && BakeSettings.BitDepth != EMaterialBakeBitDepth::Bake_8Bit)
+		if (ExportBitDepth == 8 && BakeSettings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit)
 		{
-			// Convert to 8-bit for JPEG
 			TArray<FColor> TempPixels;
 			TempPixels.AddUninitialized(TextureSize.X * TextureSize.Y);
-			if (BakeSettings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit)
+			const FFloat16Color* Src = reinterpret_cast<const FFloat16Color*>(RawPixels.GetData());
+			for (int32 i = 0; i < TempPixels.Num(); ++i)
 			{
-				const FFloat16Color* Src = reinterpret_cast<const FFloat16Color*>(RawPixels.GetData());
-				for (int32 i = 0; i < TempPixels.Num(); ++i)
-				{
-					TempPixels[i] = FLinearColor(Src[i]).ToFColor(BakeSettings.bSRGB);
-				}
+				TempPixels[i] = FLinearColor(Src[i]).ToFColor(bSRGB);
 			}
 			ExportPixels.SetNum(TempPixels.Num() * sizeof(FColor));
 			FMemory::Memcpy(ExportPixels.GetData(), TempPixels.GetData(), ExportPixels.Num());
 		}
 
-
 		FString SaveFilePath = FPaths::Combine(BakeSettings.OutputPath, BakeSettings.BakedName + Extension);
 		if (SaveFilePath.StartsWith(TEXT("/Game/")))
 		{
 			FString ContentDir = FPaths::ProjectContentDir();
-			SaveFilePath = SaveFilePath.RightChop(6); // Remove "/Game/"
+			SaveFilePath = SaveFilePath.RightChop(6);
 			SaveFilePath = FPaths::Combine(ContentDir, SaveFilePath);
 		}
 
@@ -247,7 +322,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 	}
 
 	RenderTarget->RemoveFromRoot();
-    return true;
+	return true;
 }
 
 #undef LOCTEXT_NAMESPACE
