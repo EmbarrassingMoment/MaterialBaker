@@ -119,7 +119,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		CaptureComponent->bCaptureOnMovement = false;
 		CaptureComponent->ShowFlags.SetAtmosphere(false);
 		CaptureComponent->ShowFlags.SetFog(false);
-		CaptureComponent->ShowFlags.SetAO(false);
+		CaptureComponent->ShowFlags.SetAmbientOcclusion(false);
 		CaptureComponent->ShowFlags.SetScreenSpaceReflections(false);
 		CaptureComponent->ShowFlags.SetLighting(false);
 		CaptureComponent->ShowFlags.SetPostProcessing(false);
