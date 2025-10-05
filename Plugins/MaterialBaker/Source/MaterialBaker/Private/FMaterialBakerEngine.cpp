@@ -134,16 +134,19 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			CaptureComponent->CaptureSource = SCS_Normal;
 			break;
 		case EMaterialPropertyType::Roughness:
-			CaptureComponent->ShowFlags.SetVisualizeBuffer(true);
-			CaptureComponent->ShowFlags.SetBufferVisualizationTarget(TEXT("GBufferRoughness"));
+			CaptureComponent->CaptureSource = SCS_BufferVisualizationDump;
+			CaptureComponent->PostProcessSettings.bOverride_BufferVisualizationTarget = true;
+			CaptureComponent->PostProcessSettings.BufferVisualizationTarget = FName(TEXT("GBufferRoughness"));
 			break;
 		case EMaterialPropertyType::Metallic:
-			CaptureComponent->ShowFlags.SetVisualizeBuffer(true);
-			CaptureComponent->ShowFlags.SetBufferVisualizationTarget(TEXT("GBufferMetallic"));
+			CaptureComponent->CaptureSource = SCS_BufferVisualizationDump;
+			CaptureComponent->PostProcessSettings.bOverride_BufferVisualizationTarget = true;
+			CaptureComponent->PostProcessSettings.BufferVisualizationTarget = FName(TEXT("GBufferMetallic"));
 			break;
 		case EMaterialPropertyType::Specular:
-			CaptureComponent->ShowFlags.SetVisualizeBuffer(true);
-			CaptureComponent->ShowFlags.SetBufferVisualizationTarget(TEXT("GBufferSpecular"));
+			CaptureComponent->CaptureSource = SCS_BufferVisualizationDump;
+			CaptureComponent->PostProcessSettings.bOverride_BufferVisualizationTarget = true;
+			CaptureComponent->PostProcessSettings.BufferVisualizationTarget = FName(TEXT("GBufferSpecular"));
 			break;
 		default:
 			break;
