@@ -48,33 +48,92 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 	}
 
 	RenderTarget->AddToRoot();
-	RenderTarget->RenderTargetFormat = RTF_RGBA16f;
-	// PF_FloatRGBAを指定し、ガンマはリニアに強制
-	RenderTarget->InitCustomFormat(TextureSize.X, TextureSize.Y, PF_FloatRGBA, true);
+
+	EPixelFormat PixelFormat;
+	ETextureRenderTargetFormat RenderTargetFormat;
+	int32 BitDepthValue;
+
+	switch (BakeSettings.BitDepth)
+	{
+	case EMaterialBakeBitDepth::Bake_8Bit:
+		PixelFormat = PF_B8G8R8A8;
+		RenderTargetFormat = RTF_RGBA8;
+		BitDepthValue = 8;
+		break;
+	case EMaterialBakeBitDepth::Bake_32Bit:
+		PixelFormat = PF_A32B32G32R32F;
+		RenderTargetFormat = RTF_RGBA32f;
+		BitDepthValue = 32;
+		break;
+	case EMaterialBakeBitDepth::Bake_16Bit:
+	default:
+		PixelFormat = PF_FloatRGBA;
+		RenderTargetFormat = RTF_RGBA16f;
+		BitDepthValue = 16;
+		break;
+	}
+
+	RenderTarget->RenderTargetFormat = RenderTargetFormat;
+	RenderTarget->InitCustomFormat(TextureSize.X, TextureSize.Y, PixelFormat, true);
 	RenderTarget->UpdateResourceImmediate(true);
 
 	// ステップ2: マテリアルを描画
 	SlowTask.EnterProgressFrame(1, LOCTEXT("DrawMaterial", "Step 2/5: Drawing Material..."));
 	UKismetRenderingLibrary::DrawMaterialToRenderTarget(World, RenderTarget, BakeSettings.Material);
-
-	// レンダリングコマンドをフラッシュして、描画が完了するのを待つ
 	FlushRenderingCommands();
 
 	// ステップ3: ピクセルデータを読み込み
 	SlowTask.EnterProgressFrame(1, LOCTEXT("ReadPixels", "Step 3/5: Reading Pixels..."));
 	FRenderTarget* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
-	TArray<FFloat16Color> RawPixels;
-	if (!RenderTargetResource || !RenderTargetResource->ReadFloat16Pixels(RawPixels))
+	if (!RenderTargetResource)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ReadPixelFailed", "Failed to get Render Target Resource."));
+		RenderTarget->RemoveFromRoot();
+		return false;
+	}
+
+	TArray<uint8> RawPixels;
+	bool bReadSuccess = false;
+	if (BakeSettings.BitDepth == EMaterialBakeBitDepth::Bake_8Bit)
+	{
+		TArray<FColor> Pixels;
+		bReadSuccess = RenderTargetResource->ReadPixels(Pixels);
+		if (bReadSuccess)
+		{
+			RawPixels.SetNum(Pixels.Num() * sizeof(FColor));
+			FMemory::Memcpy(RawPixels.GetData(), Pixels.GetData(), RawPixels.Num());
+		}
+	}
+	else if (BakeSettings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit)
+	{
+		TArray<FFloat16Color> Pixels;
+		bReadSuccess = RenderTargetResource->ReadFloat16Pixels(Pixels);
+		if (bReadSuccess)
+		{
+			RawPixels.SetNum(Pixels.Num() * sizeof(FFloat16Color));
+			FMemory::Memcpy(RawPixels.GetData(), Pixels.GetData(), RawPixels.Num());
+		}
+	}
+	else // 32-bit
+	{
+		TArray<FLinearColor> Pixels;
+		bReadSuccess = RenderTargetResource->ReadLinearColorPixels(Pixels);
+		if (bReadSuccess)
+		{
+			RawPixels.SetNum(Pixels.Num() * sizeof(FLinearColor));
+			FMemory::Memcpy(RawPixels.GetData(), Pixels.GetData(), RawPixels.Num());
+		}
+	}
+
+	if (!bReadSuccess)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ReadPixelFailed", "Failed to read pixels from Render Target."));
 		RenderTarget->RemoveFromRoot();
 		return false;
 	}
 
-
 	if (BakeSettings.OutputType == EMaterialBakeOutputType::Texture)
 	{
-		// ステップ4: アセットの作成準備
 		SlowTask.EnterProgressFrame(1, LOCTEXT("PrepareAsset", "Step 4/5: Preparing Asset..."));
 		FString PackagePath = BakeSettings.OutputPath;
 		FString AssetName = BakeSettings.BakedName;
@@ -99,29 +158,38 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		NewTexture->CompressionSettings = BakeSettings.CompressionSettings;
 		NewTexture->SRGB = BakeSettings.bSRGB;
 
-		// ステップ5: テクスチャを更新して保存
+		ETextureSourceFormat TextureFormat;
+		switch (BakeSettings.BitDepth)
+		{
+		case EMaterialBakeBitDepth::Bake_8Bit:
+			TextureFormat = TSF_BGRA8;
+			break;
+		case EMaterialBakeBitDepth::Bake_32Bit:
+			TextureFormat = TSF_A32B32G32R32F;
+			break;
+		case EMaterialBakeBitDepth::Bake_16Bit:
+		default:
+			TextureFormat = TSF_RGBA16F;
+			break;
+		}
+
 		SlowTask.EnterProgressFrame(1, LOCTEXT("UpdateTexture", "Step 5/5: Updating and Saving Texture..."));
-		NewTexture->Source.Init(TextureSize.X, TextureSize.Y, 1, 1, TSF_RGBA16F, (const uint8*)RawPixels.GetData());
+		NewTexture->Source.Init(TextureSize.X, TextureSize.Y, 1, 1, TextureFormat, RawPixels.GetData());
 		NewTexture->UpdateResource();
 		Package->MarkPackageDirty();
 		FAssetRegistryModule::GetRegistry().AssetCreated(NewTexture);
 		NewTexture->PostEditChange();
 		NewTexture->RemoveFromRoot();
 	}
-	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA)
+	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA || BakeSettings.OutputType == EMaterialBakeOutputType::EXR)
 	{
-		// ステップ4: 画像ファイルとしてエクスポート
 		SlowTask.EnterProgressFrame(1, LOCTEXT("ExportImage", "Step 4/5: Exporting Image..."));
-
-		TArray<FColor> OutPixels;
-		OutPixels.AddUninitialized(TextureSize.X * TextureSize.Y);
-		for (int32 i = 0; i < RawPixels.Num(); ++i)
-		{
-			OutPixels[i] = FLinearColor(RawPixels[i]).ToFColor(BakeSettings.bSRGB);
-		}
 
 		FString Extension;
 		EImageFormat ImageFormat;
+		ERGBFormat RGBFormat = ERGBFormat::BGRA;
+		int32 ExportBitDepth = BitDepthValue;
+
 		switch (BakeSettings.OutputType)
 		{
 		case EMaterialBakeOutputType::PNG:
@@ -131,15 +199,48 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		case EMaterialBakeOutputType::JPEG:
 			Extension = TEXT(".jpg");
 			ImageFormat = EImageFormat::JPEG;
+			ExportBitDepth = 8; // JPEG is always 8-bit
 			break;
 		case EMaterialBakeOutputType::TGA:
 			Extension = TEXT(".tga");
 			ImageFormat = EImageFormat::TGA;
 			break;
+		case EMaterialBakeOutputType::EXR:
+			Extension = TEXT(".exr");
+			ImageFormat = EImageFormat::EXR;
+			RGBFormat = ERGBFormat::RGBA;
+			break;
 		default:
-			// Should not happen
 			return false;
 		}
+
+		// Convert pixel data if necessary
+		TArray<uint8> ExportPixels = RawPixels;
+		if (BakeSettings.OutputType == EMaterialBakeOutputType::JPEG && BakeSettings.BitDepth != EMaterialBakeBitDepth::Bake_8Bit)
+		{
+			// Convert to 8-bit for JPEG
+			TArray<FColor> TempPixels;
+			TempPixels.AddUninitialized(TextureSize.X * TextureSize.Y);
+			if (BakeSettings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit)
+			{
+				const FFloat16Color* Src = reinterpret_cast<const FFloat16Color*>(RawPixels.GetData());
+				for (int32 i = 0; i < TempPixels.Num(); ++i)
+				{
+					TempPixels[i] = FLinearColor(Src[i]).ToFColor(BakeSettings.bSRGB);
+				}
+			}
+			else // 32-bit
+			{
+				const FLinearColor* Src = reinterpret_cast<const FLinearColor*>(RawPixels.GetData());
+				for (int32 i = 0; i < TempPixels.Num(); ++i)
+				{
+					TempPixels[i] = Src[i].ToFColor(BakeSettings.bSRGB);
+				}
+			}
+			ExportPixels.SetNum(TempPixels.Num() * sizeof(FColor));
+			FMemory::Memcpy(ExportPixels.GetData(), TempPixels.GetData(), ExportPixels.Num());
+		}
+
 
 		FString SaveFilePath = FPaths::Combine(BakeSettings.OutputPath, BakeSettings.BakedName + Extension);
 		if (SaveFilePath.StartsWith(TEXT("/Game/")))
@@ -152,9 +253,8 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
 		TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormat);
 
-		if (ImageWrapper.IsValid() && ImageWrapper->SetRaw(OutPixels.GetData(), OutPixels.Num() * sizeof(FColor), TextureSize.X, TextureSize.Y, ERGBFormat::BGRA, 8))
+		if (ImageWrapper.IsValid() && ImageWrapper->SetRaw(ExportPixels.GetData(), ExportPixels.Num(), TextureSize.X, TextureSize.Y, RGBFormat, ExportBitDepth))
 		{
-			// ディレクトリが存在しない場合は作成
 			FString DirectoryPath = FPaths::GetPath(SaveFilePath);
 			if (!FPaths::DirectoryExists(DirectoryPath))
 			{

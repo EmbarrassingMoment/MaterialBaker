@@ -35,6 +35,8 @@ private:
 	void OnSRGBCheckBoxChanged(ECheckBoxState NewState);
 	void OnOutputTypeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
 	TSharedRef<SWidget> MakeWidgetForOutputTypeOption(TSharedPtr<FString> InOption);
+	void OnBitDepthChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
+	TSharedRef<SWidget> MakeWidgetForBitDepthOption(TSharedPtr<FString> InOption);
 	void OnOutputPathTextChanged(const FText& InText);
 	FReply OnBrowseButtonClicked();
 	FReply OnAddToQueueClicked();
@@ -53,6 +55,7 @@ private:
 	FMaterialBakeSettings CurrentBakeSettings;
 	TArray<TSharedPtr<FString>> CompressionSettingOptions;
 	TArray<TSharedPtr<FString>> OutputTypeOptions;
+	TArray<TSharedPtr<FString>> BitDepthOptions;
 
 	TArray<TSharedPtr<FMaterialBakeSettings>> BakeQueue;
 	TSharedPtr<FMaterialBakeSettings> SelectedQueueItem;
