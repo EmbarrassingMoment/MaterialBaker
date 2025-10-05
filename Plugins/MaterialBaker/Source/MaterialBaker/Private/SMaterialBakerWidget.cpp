@@ -58,6 +58,16 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs)
 		}
 	}
 
+	// Initialize property type options
+	const UEnum* PropertyTypeEnum = StaticEnum<EMaterialPropertyType>();
+	if (PropertyTypeEnum)
+	{
+		for (int32 i = 0; i < PropertyTypeEnum->NumEnums(); ++i)
+		{
+			PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByIndex(i).ToString())));
+		}
+	}
+
 
 	// -- UI Layout --
 
@@ -81,13 +91,42 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs)
 		.HeaderRow
 		(
 			SNew(SHeaderRow)
-			+ SHeaderRow::Column("Material").DefaultLabel(LOCTEXT("MaterialColumn", "Material"))
-			+ SHeaderRow::Column("BakedName").DefaultLabel(LOCTEXT("BakedNameColumn", "Baked Name"))
+			+ SHeaderRow::Column("Material").DefaultLabel(LOCTEXT("MaterialColumn", "Material")).FillWidth(0.4f)
+			+ SHeaderRow::Column("BakedName").DefaultLabel(LOCTEXT("BakedNameColumn", "Baked Name")).FillWidth(0.4f)
+			+ SHeaderRow::Column("Property").DefaultLabel(LOCTEXT("PropertyColumn", "Property")).FillWidth(0.2f)
 		);
 
 	ChildSlot
 	[
 		SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(STextBlock)
+			.Text(LOCTEXT("PropertyTypeLabel", "Property to Bake"))
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(5.0f)
+		[
+			SNew(SComboBox<TSharedPtr<FString>>)
+			.OptionsSource(&PropertyTypeOptions)
+			.OnSelectionChanged(this, &SMaterialBakerWidget::OnPropertyTypeChanged)
+			.OnGenerateWidget(this, &SMaterialBakerWidget::MakeWidgetForPropertyTypeOption)
+			.InitiallySelectedItem(PropertyTypeOptions.Num() > 0 ? PropertyTypeOptions[0] : nullptr)
+			[
+				SNew(STextBlock)
+				.Text_Lambda([this] {
+					const UEnum* Enum = StaticEnum<EMaterialPropertyType>();
+					if (Enum)
+					{
+						return Enum->GetDisplayNameTextByValue((int64)CurrentBakeSettings.PropertyType);
+					}
+					return FText::GetEmpty();
+				})
+			]
+		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
@@ -503,6 +542,30 @@ TSharedRef<SWidget> SMaterialBakerWidget::MakeWidgetForBitDepthOption(TSharedPtr
 	return SNew(STextBlock).Text(FText::FromString(*InOption));
 }
 
+void SMaterialBakerWidget::OnPropertyTypeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
+{
+	if (NewSelection.IsValid())
+	{
+		const UEnum* Enum = StaticEnum<EMaterialPropertyType>();
+		if (Enum)
+		{
+			for (int32 i = 0; i < Enum->NumEnums(); ++i)
+			{
+				if (*NewSelection == Enum->GetDisplayNameTextByIndex(i).ToString())
+				{
+					CurrentBakeSettings.PropertyType = static_cast<EMaterialPropertyType>(Enum->GetValueByIndex(i));
+					break;
+				}
+			}
+		}
+	}
+}
+
+TSharedRef<SWidget> SMaterialBakerWidget::MakeWidgetForPropertyTypeOption(TSharedPtr<FString> InOption)
+{
+	return SNew(STextBlock).Text(FText::FromString(*InOption));
+}
+
 void SMaterialBakerWidget::OnOutputPathTextChanged(const FText& InText)
 {
 	CurrentBakeSettings.OutputPath = InText.ToString();
@@ -654,19 +717,32 @@ TSharedRef<ITableRow> SMaterialBakerWidget::OnGenerateRowForBakeQueue(TSharedPtr
 	FString MaterialName = InItem->Material ? InItem->Material->GetName() : TEXT("None");
 	FString BakedName = InItem->BakedName;
 
+	FText PropertyTypeText = FText::GetEmpty();
+	const UEnum* Enum = StaticEnum<EMaterialPropertyType>();
+	if (Enum)
+	{
+		PropertyTypeText = Enum->GetDisplayNameTextByValue((int64)InItem->PropertyType);
+	}
+
+
 	return SNew(STableRow<TSharedPtr<FMaterialBakeSettings>>, OwnerTable)
 		.Padding(2.0f)
 		[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
-			.FillWidth(0.5f)
+			.FillWidth(0.4f)
 			[
 				SNew(STextBlock).Text(FText::FromString(MaterialName))
 			]
 			+ SHorizontalBox::Slot()
-			.FillWidth(0.5f)
+			.FillWidth(0.4f)
 			[
 				SNew(STextBlock).Text(FText::FromString(BakedName))
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(0.2f)
+			[
+				SNew(STextBlock).Text(PropertyTypeText)
 			]
 		];
 }

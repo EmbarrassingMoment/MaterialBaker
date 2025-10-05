@@ -37,6 +37,8 @@ private:
 	TSharedRef<SWidget> MakeWidgetForOutputTypeOption(TSharedPtr<FString> InOption);
 	void OnBitDepthChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
 	TSharedRef<SWidget> MakeWidgetForBitDepthOption(TSharedPtr<FString> InOption);
+	void OnPropertyTypeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
+	TSharedRef<SWidget> MakeWidgetForPropertyTypeOption(TSharedPtr<FString> InOption);
 	void OnOutputPathTextChanged(const FText& InText);
 	FReply OnBrowseButtonClicked();
 	FReply OnAddToQueueClicked();
@@ -56,6 +58,7 @@ private:
 	TArray<TSharedPtr<FString>> CompressionSettingOptions;
 	TArray<TSharedPtr<FString>> OutputTypeOptions;
 	TArray<TSharedPtr<FString>> BitDepthOptions;
+	TArray<TSharedPtr<FString>> PropertyTypeOptions;
 
 	TArray<TSharedPtr<FMaterialBakeSettings>> BakeQueue;
 	TSharedPtr<FMaterialBakeSettings> SelectedQueueItem;
