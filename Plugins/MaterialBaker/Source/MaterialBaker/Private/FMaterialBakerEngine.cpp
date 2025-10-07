@@ -141,7 +141,6 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		case EMaterialPropertyType::Metallic:
 		case EMaterialPropertyType::Specular:
 			{
-				CaptureComponent->CaptureSource = SCS_BufferVisualization;
 				CVar_BufferVisualizationTarget = IConsoleManager::Get().FindConsoleVariable(TEXT("r.BufferVisualizationTarget"));
 				if (CVar_BufferVisualizationTarget)
 				{
