@@ -138,18 +138,25 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			CaptureComponent->CaptureSource = SCS_Normal;
 			break;
 		case EMaterialPropertyType::Roughness:
-			// TODO: Implement Roughness baking
-			break;
 		case EMaterialPropertyType::Metallic:
-			CVar_BufferVisualizationTarget = IConsoleManager::Get().FindConsoleVariable(TEXT("r.BufferVisualizationTarget"));
-			if (CVar_BufferVisualizationTarget)
-			{
-				PreviousBufferVisualizationValue = CVar_BufferVisualizationTarget->GetString();
-				CVar_BufferVisualizationTarget->Set(TEXT("Metallic"), ECVF_SetByCode);
-			}
-			break;
 		case EMaterialPropertyType::Specular:
-			// TODO: Implement Specular baking
+			{
+				CaptureComponent->CaptureSource = SCS_BufferVisualization;
+				CVar_BufferVisualizationTarget = IConsoleManager::Get().FindConsoleVariable(TEXT("r.BufferVisualizationTarget"));
+				if (CVar_BufferVisualizationTarget)
+				{
+					PreviousBufferVisualizationValue = CVar_BufferVisualizationTarget->GetString();
+					FString TargetBufferName;
+					switch (BakeSettings.PropertyType)
+					{
+						case EMaterialPropertyType::Roughness: TargetBufferName = TEXT("Roughness"); break;
+						case EMaterialPropertyType::Metallic:  TargetBufferName = TEXT("Metallic"); break;
+						case EMaterialPropertyType::Specular:  TargetBufferName = TEXT("Specular"); break;
+						default: break;
+					}
+					CVar_BufferVisualizationTarget->Set(*TargetBufferName, ECVF_SetByCode);
+				}
+			}
 			break;
 		default:
 			break;
