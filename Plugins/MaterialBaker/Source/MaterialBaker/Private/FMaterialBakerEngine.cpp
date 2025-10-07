@@ -25,6 +25,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "HAL/IConsoleManager.h"
 
 
 #define LOCTEXT_NAMESPACE "FMaterialBakerModule"
@@ -125,6 +126,9 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		CaptureComponent->ShowFlags.SetPostProcessing(false);
 		CaptureComponent->CaptureSource = bIsHdr ? SCS_FinalColorHDR : SCS_FinalColorLDR;
 
+		IConsoleVariable* CVar_BufferVisualizationTarget = nullptr;
+		FString PreviousBufferVisualizationValue;
+
 		switch (BakeSettings.PropertyType)
 		{
 		case EMaterialPropertyType::BaseColor:
@@ -137,7 +141,12 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			// TODO: Implement Roughness baking
 			break;
 		case EMaterialPropertyType::Metallic:
-			// TODO: Implement Metallic baking
+			CVar_BufferVisualizationTarget = IConsoleManager::Get().FindConsoleVariable(TEXT("r.BufferVisualizationTarget"));
+			if (CVar_BufferVisualizationTarget)
+			{
+				PreviousBufferVisualizationValue = CVar_BufferVisualizationTarget->GetString();
+				CVar_BufferVisualizationTarget->Set(TEXT("Metallic"), ECVF_SetByCode);
+			}
 			break;
 		case EMaterialPropertyType::Specular:
 			// TODO: Implement Specular baking
@@ -147,6 +156,11 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		}
 
 		CaptureComponent->CaptureScene();
+
+		if (CVar_BufferVisualizationTarget)
+		{
+			CVar_BufferVisualizationTarget->Set(*PreviousBufferVisualizationValue, ECVF_SetByCode);
+		}
 
 		MeshActor->Destroy();
 		CaptureActor->Destroy();
