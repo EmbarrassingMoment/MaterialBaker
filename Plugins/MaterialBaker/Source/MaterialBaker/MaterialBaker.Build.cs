@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 kurorekish. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -42,10 +42,20 @@ public class MaterialBaker : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore",
-				// ... add private dependencies that you statically link with here ...	
-			}
-			);
+                "SlateCore",
+                "PropertyEditor",
+                "ContentBrowser",
+                "AssetRegistry",
+                "AssetTools",
+                "RHI",
+				"RenderCore",
+                "PropertyEditor",
+                "ImageCore",
+                "DesktopPlatform",
+                "ImageWrapper",
+                               // ... add private dependencies that you statically link with here ...
+             }
+         );
 		
 		
 		DynamicallyLoadedModuleNames.AddRange(
