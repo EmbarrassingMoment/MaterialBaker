@@ -27,14 +27,42 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 
 ## How to Use
 
-1.  Find the **Material Baker** button in the Unreal Engine toolbar (**Tools > Material Baker**) and click it to open the plugin window.
-2.  Select the material you want to bake and configure the settings, such as texture size, name, and output format.
-3.  Click the **Add to Queue** button to add the configured material to the bake queue.
-4.  To modify an item in the queue, select it from the list. The settings panel will be populated with its data. After making changes, click the **Update Selected** button to apply them.
-5.  To remove an item, select it and click the **Remove Selected** button.
-6.  Repeat the process to add more materials to the queue.
-7.  Once you have added all the materials you want to bake, click the **Bake All** button.
-8.  The plugin will process all materials in the queue. Baked textures will be saved automatically to the specified path. **Texture Assets** are saved within the project's content folder, while **PNG**, **JPEG**, and **TGA** files are saved to the absolute path designated in the settings.
+### 1. Opening the Tool
+
+1.  In the Unreal Engine editor, navigate to the main toolbar.
+2.  Click on **Tools > Material Baker** to open the plugin window.
+
+### 2. Configuring a Bake Job
+
+The **Bake Settings** tab is where you define the parameters for each bake.
+
+1.  **Property to Bake:** Select the material channel you want to export (e.g., Base Color, Normal, Roughness).
+2.  **Bit Depth:** Choose between **8-bit** for standard textures and **16-bit** for high-quality textures with more color/data precision.
+3.  **Target Material:** Use the dropdown to select the material you want to bake. The plugin will automatically suggest an output name and path.
+4.  **Baked Texture Name:** Assign a name to your output texture.
+5.  **Bake Texture Size:** Set the resolution (width and height) for the baked texture.
+6.  **Compression Setting:** (For Texture Assets) Choose the compression method. `TC_Default` is suitable for most color textures, while `TC_Normalmap` is best for normal maps.
+7.  **sRGB:** Enable this for color textures (Base Color, Final Color). Disable it for linear data maps (Normal, Roughness, Metallic, etc.) to ensure correct results.
+8.  **Output Type:**
+    *   **Texture Asset:** Creates a `UTexture` asset inside your project's content folder. This is the most common choice.
+    *   **PNG, JPEG, TGA:** Exports the texture as an image file to a specified location on your computer.
+9.  **Output Path:**
+    *   For **Texture Assets**, this is a path within your project's `/Game/` directory (e.g., `/Game/Textures/MyBakes`).
+    *   For image files, this is an absolute path on your system (e.g., `D:/MyProject/Exports`).
+
+### 3. Managing the Bake Queue
+
+The **Bake Queue** tab manages the list of jobs to be processed.
+
+1.  **Add to Queue:** After configuring a job in the **Bake Settings** tab, click **Add to Queue**. The job will appear in the bake queue list.
+2.  **Update Selected:** To modify a job that's already in the queue, select it from the list. The **Bake Settings** tab will populate with its data. Make your changes and click **Update Selected** to save them.
+3.  **Remove Selected:** To delete a job from the queue, select it and click **Remove Selected**.
+
+### 4. Baking
+
+1.  Once your queue is ready, click the **Bake All** button.
+2.  A progress bar will appear as the plugin processes each job.
+3.  When complete, the baked textures will be available in the output path you specified for each job.
 
 ## Requirements
 
@@ -87,14 +115,42 @@ This plugin is licensed under the [MIT License](LICENSE).
 
 ## 使い方
 
-1.  Unreal Engineのツールバーにある「Material Baker」ボタン（**Tools > Material Baker**）をクリックして、プラグインウィンドウを開きます。
-2.  ベイクしたいマテリアルを選択し、テクスチャサイズ、名前、出力形式などの設定を行います。
-3.  **「Add to Queue」** ボタンをクリックして、設定したマテリアルをベイクキューに追加します。
-4.  キュー内のアイテムを編集するには、リストからそのアイテムを選択します。設定パネルにそのデータが読み込まれます。変更を加えた後、 **「Update Selected」** ボタンをクリックして変更を適用します。
-5.  アイテムを削除するには、それを選択して **「Remove Selected」** ボタンをクリックします。
-6.  このプロセスを繰り返して、さらにマテリアルをキューに追加します。
-7.  ベイクしたいすべてのマテリアルを追加したら、 **「Bake All」** ボタンをクリックします。
-8.  プラグインがキュー内のすべてのマテリアルを処理します。ベイクされたテクスチャは指定されたパスに自動的に保存されます。**Texture Asset** はプロジェクトのコンテンツフォルダ内に、**PNG**、**JPEG**、**TGA** ファイルは設定で指定された絶対パスに保存されます。
+### 1. ツールの起動
+
+1.  Unreal Engineエディタのメインツールバーに移動します。
+2.  **「Tools > Material Baker」** をクリックして、プラグインウィンドウを開きます。
+
+### 2. ベイク設定
+
+**「Bake Settings」** タブで、各ベイクジョブのパラメータを定義します。
+
+1.  **Property to Bake (ベイクするプロパティ):** エクスポートしたいマテリアルチャンネル（例: Base Color, Normal, Roughness）を選択します。
+2.  **Bit Depth (ビット深度):** 標準的なテクスチャには **8-bit** を、より高い色/データ精度を持つ高品質なテクスチャには **16-bit** を選択します。
+3.  **Target Material (対象マテリアル):** ドロップダウンからベイクしたいマテリアルを選択します。選択すると、出力名とパスが自動的に提案されます。
+4.  **Baked Texture Name (ベイク後のテクスチャ名):** 出力テクスチャの名前を割り当てます。
+5.  **Bake Texture Size (ベイクテクスチャのサイズ):** ベイクするテクスチャの解像度（幅と高さ）を設定します。
+6.  **Compression Setting (圧縮設定):** (テクスチャアセット用) 圧縮形式を選択します。`TC_Default` はほとんどのカラーテクスチャに適しており、`TC_Normalmap` は法線マップに最適です。
+7.  **sRGB:** カラーテクスチャ（Base Color, Final Color）では有効にします。法線、ラフネス、メタリックなどのリニアデータマップでは、正確な結果を得るために無効にします。
+8.  **Output Type (出力タイプ):**
+    *   **Texture Asset:** プロジェクトのコンテンツフォルダ内に `UTexture` アセットを作成します。これが最も一般的な選択肢です。
+    *   **PNG, JPEG, TGA:** テクスチャを画像ファイルとして、PC上の指定した場所にエクスポートします。
+9.  **Output Path (出力パス):**
+    *   **Texture Asset** の場合、プロジェクトの `/Game/` ディレクトリ内のパス（例: `/Game/Textures/MyBakes`）を指定します。
+    *   画像ファイルの場合、システム上の絶対パス（例: `D:/MyProject/Exports`）を指定します。
+
+### 3. ベイクキューの管理
+
+**「Bake Queue」** タブで、処理するジョブのリストを管理します。
+
+1.  **Add to Queue (キューに追加):** **「Bake Settings」** タブでジョブを設定した後、**「Add to Queue」** をクリックします。ジョブがベイクキューのリストに表示されます。
+2.  **Update Selected (選択項目を更新):** キューに既にあるジョブを修正するには、リストからそのジョブを選択します。**「Bake Settings」** タブにそのデータが読み込まれるので、変更を加えてから **「Update Selected」** をクリックして保存します。
+3.  **Remove Selected (選択項目を削除):** キューからジョブを削除するには、そのジョブを選択して **「Remove Selected」** をクリックします。
+
+### 4. ベイクの実行
+
+1.  キューの準備ができたら、**「Bake All」** ボタンをクリックします。
+2.  プラグインが各ジョブを処理する間、プログレスバーが表示されます。
+3.  完了すると、ベイクされたテクスチャは各ジョブで指定した出力パスで利用可能になります。
 
 ## 要件
 
