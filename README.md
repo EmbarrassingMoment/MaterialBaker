@@ -7,14 +7,21 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 
 ## Features
 
-*   **Select any Material:** Choose any Material from your project to bake.
+*   **Bake Various Properties:** Bake a wide range of material properties:
+    *   Final Color
+    *   Base Color
+    *   Normal
+    *   Roughness
+    *   Metallic
+    *   Specular
+*   **Flexible Output:** Save baked textures as **Texture Assets**, **PNG**, **JPEG**, or **TGA** files.
+*   **Bit Depth Selection:** Choose between **8-bit** and **16-bit** output to fit your project's needs.
 *   **Bake Queue:** Add multiple materials to a queue for batch baking.
 *   **Update in Queue:** Select items in the queue to update their settings.
 *   **Automatic Naming and Path:** Automatically suggests a texture name and output path based on the selected material.
-*   **Custom Texture Size:** Set the width and height of the output texture.
-*   **Compression Settings:** Choose the desired compression format for your texture.
-*   **sRGB Toggle:** Enable or disable sRGB based on your needs.
-*   **Output Format Selection:** Choose the output file format (e.g., PNG, JPEG).
+*   **Custom Texture Size:** Set the width and height of the output texture (up to 8192x8192).
+*   **Compression Settings:** Choose the desired compression format for your texture assets.
+*   **sRGB Toggle:** Enable or disable sRGB for color accuracy.
 *   **Detailed Progress Display:** Shows detailed progress during the baking process.
 
 ## How to Use
@@ -26,7 +33,7 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 5.  To remove an item, select it and click the **Remove Selected** button.
 6.  Repeat the process to add more materials to the queue.
 7.  Once you have added all the materials you want to bake, click the **Bake All** button.
-8.  The plugin will process all materials in the queue. If the output type is set to **Texture Asset**, new textures will be created in the specified project path. If it's set to **PNG** or **JPEG**, you will be prompted to save each file on your computer.
+8.  The plugin will process all materials in the queue. Baked textures will be saved automatically to the specified path. **Texture Assets** are saved within the project's content folder, while **PNG**, **JPEG**, and **TGA** files are saved to the absolute path designated in the settings.
 
 ## Requirements
 
@@ -59,14 +66,21 @@ This plugin is licensed under the [MIT License](LICENSE).
 
 ## 機能
 
-*   **任意のマテリアル選択:** プロジェクト内の任意のマテリアルを選択してベイクできます。
+*   **多様なプロパティのベイク:** 幅広いマテリアルプロパティをベイクできます:
+    *   Final Color (最終的な色)
+    *   Base Color (ベースカラー)
+    *   Normal (法線)
+    *   Roughness (ラフネス)
+    *   Metallic (メタリック)
+    *   Specular (スペキュラ)
+*   **柔軟な出力形式:** ベイクしたテクスチャを **Texture Asset**, **PNG**, **JPEG**, **TGA** ファイルとして保存できます。
+*   **ビット深度の選択:** プロジェクトのニーズに合わせて **8-bit** と **16-bit** の出力形式を選択できます。
 *   **ベイクキュー:** 複数のマテリアルをキューに追加し、一括でベイク処理できます。
 *   **キューの更新:** キュー内のアイテムを選択して、設定を更新できます。
 *   **自動命名とパス提案:** 選択したマテリアルに基づいて、テクスチャ名と出力パスを自動的に提案します。
-*   **カスタムテクスチャサイズ:** 出力するテクスチャの幅と高さを自由に設定できます。
-*   **圧縮設定:** テクスチャに適した圧縮形式を選択できます。
-*   **sRGB切り替え:** 必要に応じてsRGBの有効/無効を切り替えられます。
-*   **出力形式の選択:** 出力するファイル形式（例：PNG、JPEG）を選択できます。
+*   **カスタムテクスチャサイズ:** 出力するテクスチャの幅と高さを自由に設定できます（最大8192x8192）。
+*   **圧縮設定:** テクスチャアセットに適した圧縮形式を選択できます。
+*   **sRGB切り替え:** 色の正確性を保つためにsRGBの有効/無効を切り替えられます。
 *   **詳細な進捗表示:** ベイク処理中に詳細な進捗状況を表示します。
 
 ## 使い方
@@ -78,7 +92,7 @@ This plugin is licensed under the [MIT License](LICENSE).
 5.  アイテムを削除するには、それを選択して **「Remove Selected」** ボタンをクリックします。
 6.  このプロセスを繰り返して、さらにマテリアルをキューに追加します。
 7.  ベイクしたいすべてのマテリアルを追加したら、 **「Bake All」** ボタンをクリックします。
-8.  プラグインがキュー内のすべてのマテリアルを処理します。出力タイプが **「Texture Asset」** に設定されている場合、指定したプロジェクトパスに新しいテクスチャが作成されます。 **「PNG」** または **「JPEG」** に設定されている場合は、各ファイルをコンピューターに保存するよう求められます。
+8.  プラグインがキュー内のすべてのマテリアルを処理します。ベイクされたテクスチャは指定されたパスに自動的に保存されます。**Texture Asset** はプロジェクトのコンテンツフォルダ内に、**PNG**、**JPEG**、**TGA** ファイルは設定で指定された絶対パスに保存されます。
 
 ## 要件
 
