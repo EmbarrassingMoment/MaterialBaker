@@ -6,10 +6,13 @@
 #include "Widgets/SCompoundWidget.h"
 #include "MaterialBakerTypes.h"
 #include "Widgets/Views/SListView.h"
+#include "Widgets/Docking/SDockTab.h"
+#include "Framework/Docking/TabManager.h"
 
 class FAssetThumbnailPool;
 struct FAssetData;
 struct FMaterialBakeSettings;
+class FTabManager;
 
 
 class SMaterialBakerWidget : public SCompoundWidget
@@ -19,11 +22,15 @@ public:
 	SLATE_END_ARGS()
 
 	/** Constructs this widget */
-	void Construct(const FArguments& InArgs);
+	void Construct(const FArguments& InArgs, const TSharedRef<SDockTab>& ConstructUnderMajorTab, const TSharedPtr<SWindow>& ConstructUnderWindow);
 
 	~SMaterialBakerWidget();
 
 private:
+	// -- Tab Management --
+	TSharedRef<SDockTab> OnSpawnTab_BakeSettings(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> OnSpawnTab_BakeQueue(const FSpawnTabArgs& Args);
+
 	// -- UI Event Handlers --
 
 	void OnMaterialChanged(const FAssetData& AssetData);
@@ -66,4 +73,7 @@ private:
 	// -- UI Widgets --
 	TSharedPtr<SBox> ThumbnailBox;
 	TSharedPtr<SListView<TSharedPtr<FMaterialBakeSettings>>> BakeQueueListView;
+
+	// -- Tab Manager --
+	TSharedPtr<FTabManager> TabManager;
 };

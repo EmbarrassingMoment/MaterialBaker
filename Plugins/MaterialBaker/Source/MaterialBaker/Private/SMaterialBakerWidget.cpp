@@ -20,9 +20,16 @@
 #include "IDesktopPlatform.h"
 #include "Misc/ScopedSlowTask.h"
 
+#include "Framework/Docking/TabManager.h"
+#include "Widgets/Docking/SDockTab.h"
+
 #define LOCTEXT_NAMESPACE "FMaterialBakerModule"
 
-void SMaterialBakerWidget::Construct(const FArguments& InArgs)
+static const FName BakeSettingsTabId("BakeSettings");
+static const FName BakeQueueTabId("BakeQueue");
+
+
+void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<SDockTab>& ConstructUnderMajorTab, const TSharedPtr<SWindow>& ConstructUnderWindow)
 {
 	// Initialize data sources
 	ThumbnailPool = MakeShareable(new FAssetThumbnailPool(10));
@@ -96,12 +103,39 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs)
 			+ SHeaderRow::Column("Property").DefaultLabel(LOCTEXT("PropertyColumn", "Property")).FillWidth(0.2f)
 		);
 
+	TabManager = FGlobalTabmanager::Get()->NewTabManager(ConstructUnderMajorTab);
+
+	const TSharedRef<FTabManager::FLayout> Layout = FTabManager::NewLayout("MaterialBakerLayout")
+		->AddArea
+		(
+			FTabManager::NewPrimaryArea()
+			->SetOrientation(Orient_Vertical)
+			->Split
+			(
+				FTabManager::NewStack()
+				->AddTab(BakeSettingsTabId, ETabState::OpenedTab)
+				->AddTab(BakeQueueTabId, ETabState::OpenedTab)
+			)
+		);
+
+	TabManager->RegisterTabSpawner(BakeSettingsTabId, FOnSpawnTab::CreateRaw(this, &SMaterialBakerWidget::OnSpawnTab_BakeSettings));
+	TabManager->RegisterTabSpawner(BakeQueueTabId, FOnSpawnTab::CreateRaw(this, &SMaterialBakerWidget::OnSpawnTab_BakeQueue));
+
 	ChildSlot
 	[
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(5.0f)
+		TabManager->RestoreFrom(Layout, ConstructUnderWindow).ToSharedRef()
+	];
+}
+
+TSharedRef<SDockTab> SMaterialBakerWidget::OnSpawnTab_BakeSettings(const FSpawnTabArgs& Args)
+{
+	return SNew(SDockTab)
+		.TabRole(ETabRole::PanelTab)
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(5.0f)
 		[
 			SNew(STextBlock)
 			.Text(LOCTEXT("PropertyTypeLabel", "Property to Bake"))
@@ -363,52 +397,68 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs)
 		.AutoHeight()
 		.Padding(10.0f)
 		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.FillWidth(1.f)
-			.Padding(2.f)
-			[
-				SNew(SButton)
-				.Text(LOCTEXT("AddToQueueButton", "Add to Queue"))
-				.OnClicked(this, &SMaterialBakerWidget::OnAddToQueueClicked)
-			]
-			+ SHorizontalBox::Slot()
-			.FillWidth(1.f)
-			.Padding(2.f)
-			[
-				SNew(SButton)
-				.Text(LOCTEXT("UpdateSelectedButton", "Update Selected"))
-				.OnClicked(this, &SMaterialBakerWidget::OnUpdateSelectedClicked)
-			]
-			+ SHorizontalBox::Slot()
-			.FillWidth(1.f)
-			.Padding(2.f)
-			[
-				SNew(SButton)
-				.Text(LOCTEXT("RemoveSelectedButton", "Remove Selected"))
-				.OnClicked(this, &SMaterialBakerWidget::OnRemoveSelectedClicked)
-			]
-		]
-		+ SVerticalBox::Slot()
-		.FillHeight(1.0f)
-		.Padding(5.0f)
-		[
-			BakeQueueListView.ToSharedRef()
-		]
-		+ SVerticalBox::Slot()
-		.HAlign(HAlign_Right)
-		.AutoHeight()
-		.Padding(10.0f)
-		[
 			SNew(SButton)
-			.Text(LOCTEXT("BakeButton", "Bake All"))
-			.OnClicked(this, &SMaterialBakerWidget::OnBakeButtonClicked)
+			.Text(LOCTEXT("AddToQueueButton", "Add to Queue"))
+			.OnClicked(this, &SMaterialBakerWidget::OnAddToQueueClicked)
 		]
 	];
 }
 
+
+TSharedRef<SDockTab> SMaterialBakerWidget::OnSpawnTab_BakeQueue(const FSpawnTabArgs& Args)
+{
+	return SNew(SDockTab)
+		.TabRole(ETabRole::PanelTab)
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.FillHeight(1.0f)
+			.Padding(5.0f)
+			[
+				BakeQueueListView.ToSharedRef()
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(10.0f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				.Padding(2.f)
+				[
+					SNew(SButton)
+					.Text(LOCTEXT("UpdateSelectedButton", "Update Selected"))
+					.OnClicked(this, &SMaterialBakerWidget::OnUpdateSelectedClicked)
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				.Padding(2.f)
+				[
+					SNew(SButton)
+					.Text(LOCTEXT("RemoveSelectedButton", "Remove Selected"))
+					.OnClicked(this, &SMaterialBakerWidget::OnRemoveSelectedClicked)
+				]
+			]
+			+ SVerticalBox::Slot()
+			.HAlign(HAlign_Right)
+			.AutoHeight()
+			.Padding(10.0f)
+			[
+				SNew(SButton)
+				.Text(LOCTEXT("BakeButton", "Bake All"))
+				.OnClicked(this, &SMaterialBakerWidget::OnBakeButtonClicked)
+			]
+		];
+}
+
+
 SMaterialBakerWidget::~SMaterialBakerWidget()
 {
+	if (TabManager.IsValid())
+	{
+		TabManager->UnregisterTabSpawner(BakeSettingsTabId);
+		TabManager->UnregisterTabSpawner(BakeQueueTabId);
+	}
 	ThumbnailPool.Reset();
 }
 
