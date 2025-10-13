@@ -31,6 +31,7 @@ enum class EMaterialPropertyType : uint8
 	Roughness UMETA(DisplayName = "Roughness"),
 	Metallic UMETA(DisplayName = "Metallic"),
 	Specular UMETA(DisplayName = "Specular"),
+	Opacity UMETA(DisplayName = "Opacity"),
 };
 
 USTRUCT(BlueprintType)
