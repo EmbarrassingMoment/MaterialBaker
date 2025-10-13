@@ -42,11 +42,16 @@ void FMaterialBakerModule::ShutdownModule()
 
 TSharedRef<SDockTab> FMaterialBakerModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-	return SNew(SDockTab)
-		.TabRole(ETabRole::NomadTab)
-		[
-			SNew(SMaterialBakerWidget)
-		];
+	TSharedRef<SDockTab> MyTab = SNew(SDockTab)
+		.TabRole(ETabRole::NomadTab);
+
+	TSharedPtr<SWindow> Window = SpawnTabArgs.GetOwnerWindow();
+
+	MyTab->SetContent(
+		SNew(SMaterialBakerWidget, MyTab, Window)
+	);
+
+	return MyTab;
 }
 
 void FMaterialBakerModule::PluginButtonClicked()

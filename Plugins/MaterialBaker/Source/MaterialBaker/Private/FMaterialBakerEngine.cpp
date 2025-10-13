@@ -140,6 +140,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		case EMaterialPropertyType::Roughness:
 		case EMaterialPropertyType::Metallic:
 		case EMaterialPropertyType::Specular:
+		case EMaterialPropertyType::Opacity:
 			{
 				CVar_BufferVisualizationTarget = IConsoleManager::Get().FindConsoleVariable(TEXT("r.BufferVisualizationTarget"));
 				if (CVar_BufferVisualizationTarget)
@@ -151,6 +152,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 						case EMaterialPropertyType::Roughness: TargetBufferName = TEXT("Roughness"); break;
 						case EMaterialPropertyType::Metallic:  TargetBufferName = TEXT("Metallic"); break;
 						case EMaterialPropertyType::Specular:  TargetBufferName = TEXT("Specular"); break;
+						case EMaterialPropertyType::Opacity:   TargetBufferName = TEXT("Opacity"); break;
 						default: break;
 					}
 					CVar_BufferVisualizationTarget->Set(*TargetBufferName, ECVF_SetByCode);
