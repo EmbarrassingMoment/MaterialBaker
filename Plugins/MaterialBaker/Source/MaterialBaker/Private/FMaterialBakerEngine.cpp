@@ -215,6 +215,43 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		return false;
 	}
 
+	// Post-process for specific property types
+	if (BakeSettings.PropertyType == EMaterialPropertyType::Opacity)
+	{
+		if (BakeSettings.BitDepth == EMaterialBakeBitDepth::Bake_8Bit)
+		{
+			TArray<FColor> Pixels;
+			Pixels.AddUninitialized(TextureSize.X * TextureSize.Y);
+			FMemory::Memcpy(Pixels.GetData(), RawPixels.GetData(), RawPixels.Num());
+
+			for (FColor& Pixel : Pixels)
+			{
+				// For Opacity, the value is in the R channel.
+				// Copy it to G and B to make it grayscale, and also to Alpha.
+				Pixel.G = Pixel.R;
+				Pixel.B = Pixel.R;
+				Pixel.A = Pixel.R;
+			}
+			FMemory::Memcpy(RawPixels.GetData(), Pixels.GetData(), RawPixels.Num());
+		}
+		else // 16-bit
+		{
+			TArray<FFloat16Color> Pixels;
+			Pixels.AddUninitialized(TextureSize.X * TextureSize.Y);
+			FMemory::Memcpy(Pixels.GetData(), RawPixels.GetData(), RawPixels.Num());
+
+			for (FFloat16Color& Pixel : Pixels)
+			{
+				// For Opacity, the value is in the R channel.
+				// Copy it to G and B to make it grayscale, and also to Alpha.
+				Pixel.G = Pixel.R;
+				Pixel.B = Pixel.R;
+				Pixel.A = Pixel.R;
+			}
+			FMemory::Memcpy(RawPixels.GetData(), Pixels.GetData(), RawPixels.Num());
+		}
+	}
+
 	if (BakeSettings.OutputType == EMaterialBakeOutputType::Texture)
 	{
 		SlowTask.EnterProgressFrame(1, LOCTEXT("PrepareAsset", "Step 4/5: Preparing Asset..."));
