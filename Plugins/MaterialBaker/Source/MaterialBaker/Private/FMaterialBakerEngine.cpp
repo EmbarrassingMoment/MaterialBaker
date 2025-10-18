@@ -164,7 +164,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		case EMaterialPropertyType::EmissiveColor:
 			CaptureComponent->ShowFlags.SetLighting(false);
 			CaptureComponent->ShowFlags.SetPostProcessing(false);
-			CaptureComponent->ShowFlags.SetToneMapping(false);
+			CaptureComponent->ShowFlags.SetTonemapper(false);
 			CaptureComponent->CaptureSource = SCS_FinalColorHDR;
 			bShowFlagsChanged = true;
 			break;
