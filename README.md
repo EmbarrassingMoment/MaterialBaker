@@ -15,6 +15,7 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
     *   Metallic
     *   Specular
     *   Opacity
+    *   Emissive Color
 *   **Flexible Output:** Save baked textures as **Texture Assets**, **PNG**, **JPEG**, or **TGA** files.
 *   **Bit Depth Selection:** Choose between **8-bit** and **16-bit** output to fit your project's needs.
 *   **Bake Queue:** Add multiple materials to a queue for batch baking.
@@ -75,6 +76,7 @@ This plugin is licensed under the [MIT License](LICENSE).
     *   Metallic (メタリック)
     *   Specular (スペキュラ)
     *   Opacity (オパシティ)
+    *   Emissive Color (自己発光色)
 *   **柔軟な出力形式:** ベイクしたテクスチャを **Texture Asset**, **PNG**, **JPEG**, **TGA** ファイルとして保存できます。
 *   **ビット深度の選択:** プロジェクトのニーズに合わせて **8-bit** と **16-bit** の出力形式を選択できます。
 *   **ベイクキュー:** 複数のマテリアルをキューに追加し、一括でベイク処理できます。
