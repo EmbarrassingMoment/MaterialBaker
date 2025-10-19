@@ -59,7 +59,7 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 	const UEnum* BitDepthEnum = StaticEnum<EMaterialBakeBitDepth>();
 	if (BitDepthEnum)
 	{
-		for (int32 i = 0; i < BitDepthEnum->NumEnums(); ++i)
+		for (int32 i = 0; i < BitDepthEnum->NumEnums() - 1; ++i)
 		{
 			BitDepthOptions.Add(MakeShareable(new FString(BitDepthEnum->GetDisplayNameTextByIndex(i).ToString())));
 		}
