@@ -69,7 +69,7 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 	const UEnum* PropertyTypeEnum = StaticEnum<EMaterialPropertyType>();
 	if (PropertyTypeEnum)
 	{
-		for (int32 i = 0; i < PropertyTypeEnum->NumEnums(); ++i)
+		for (int32 i = 0; i < PropertyTypeEnum->NumEnums() - 1; ++i)
 		{
 			PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByIndex(i).ToString())));
 		}
