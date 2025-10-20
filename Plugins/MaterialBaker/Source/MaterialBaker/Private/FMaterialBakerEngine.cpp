@@ -76,7 +76,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 	}
 
 	const bool bIsHdr = BakeSettings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit;
-	bool bIsColorData = BakeSettings.PropertyType == EMaterialPropertyType::FinalColor || BakeSettings.PropertyType == EMaterialPropertyType::BaseColor;
+	bool bIsColorData = BakeSettings.PropertyType == EMaterialPropertyType::FinalColor || BakeSettings.PropertyType == EMaterialPropertyType::BaseColor || BakeSettings.PropertyType == EMaterialPropertyType::EmissiveColor;
 	bool bSRGB = bIsColorData && BakeSettings.bSRGB;
 
 	RenderTarget->RenderTargetFormat = RenderTargetFormat;
@@ -128,6 +128,8 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 
 		IConsoleVariable* CVar_BufferVisualizationTarget = nullptr;
 		FString PreviousBufferVisualizationValue;
+		FEngineShowFlags PreviousShowFlags = CaptureComponent->ShowFlags;
+		bool bShowFlagsChanged = false;
 
 		switch (BakeSettings.PropertyType)
 		{
@@ -159,6 +161,13 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 				}
 			}
 			break;
+		case EMaterialPropertyType::EmissiveColor:
+			CaptureComponent->ShowFlags.SetLighting(false);
+			CaptureComponent->ShowFlags.SetPostProcessing(false);
+			CaptureComponent->ShowFlags.SetTonemapper(false);
+			CaptureComponent->CaptureSource = SCS_FinalColorHDR;
+			bShowFlagsChanged = true;
+			break;
 		default:
 			break;
 		}
@@ -168,6 +177,11 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		if (CVar_BufferVisualizationTarget)
 		{
 			CVar_BufferVisualizationTarget->Set(*PreviousBufferVisualizationValue, ECVF_SetByCode);
+		}
+
+		if (bShowFlagsChanged)
+		{
+			CaptureComponent->ShowFlags = PreviousShowFlags;
 		}
 
 		MeshActor->Destroy();

@@ -32,6 +32,7 @@ enum class EMaterialPropertyType : uint8
 	Metallic UMETA(DisplayName = "Metallic"),
 	Specular UMETA(DisplayName = "Specular"),
 	Opacity UMETA(DisplayName = "Opacity"),
+	EmissiveColor UMETA(DisplayName = "Emissive Color"),
 };
 
 USTRUCT(BlueprintType)

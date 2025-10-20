@@ -49,7 +49,7 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 	const UEnum* OutputTypeEnum = StaticEnum<EMaterialBakeOutputType>();
 	if (OutputTypeEnum)
 	{
-		for (int32 i = 0; i < OutputTypeEnum->NumEnums(); ++i)
+		for (int32 i = 0; i < OutputTypeEnum->NumEnums() - 1; ++i)
 		{
 			OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByIndex(i).ToString())));
 		}
@@ -59,7 +59,7 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 	const UEnum* BitDepthEnum = StaticEnum<EMaterialBakeBitDepth>();
 	if (BitDepthEnum)
 	{
-		for (int32 i = 0; i < BitDepthEnum->NumEnums(); ++i)
+		for (int32 i = 0; i < BitDepthEnum->NumEnums() - 1; ++i)
 		{
 			BitDepthOptions.Add(MakeShareable(new FString(BitDepthEnum->GetDisplayNameTextByIndex(i).ToString())));
 		}
@@ -69,7 +69,7 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 	const UEnum* PropertyTypeEnum = StaticEnum<EMaterialPropertyType>();
 	if (PropertyTypeEnum)
 	{
-		for (int32 i = 0; i < PropertyTypeEnum->NumEnums(); ++i)
+		for (int32 i = 0; i < PropertyTypeEnum->NumEnums() - 1; ++i)
 		{
 			PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByIndex(i).ToString())));
 		}
