@@ -37,6 +37,22 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 7.  Once you have added all the materials you want to bake, click the **Bake All** button.
 8.  The plugin will process all materials in the queue. Baked textures will be saved automatically to the specified path. **Texture Assets** are saved within the project's content folder, while **PNG**, **JPEG**, and **TGA** files are saved to the absolute path designated in the settings.
 
+## Tips
+
+### Baking Signed Distance Fields (SDF)
+
+Signed Distance Fields (SDFs) often use negative values to represent the area inside a shape and positive values for the area outside. To correctly bake this data without losing the negative values (i.e., clamping them to 0), you need to use a high-precision, linear format.
+
+The `Emissive Color` property is the best choice for this purpose, as its baking pipeline is set up to handle HDR (High Dynamic Range) values without applying tonemapping.
+
+**Recommended Settings:**
+
+*   **Material Setup:** Connect your SDF calculation result to the **Emissive Color** output pin in your material.
+*   **Property:** `Emissive Color`
+*   **Bit Depth:** `16-bit`
+*   **Output Type:** `Texture Asset` (This ensures the data is saved in a floating-point format).
+*   **sRGB:** `Disabled` (Unchecked). SDF data is linear and should not be gamma-corrected.
+
 ## Requirements
 
 *   Unreal Engine 5.3 or later.
@@ -97,6 +113,22 @@ This plugin is licensed under the [MIT License](LICENSE).
 6.  このプロセスを繰り返して、さらにマテリアルをキューに追加します。
 7.  ベイクしたいすべてのマテリアルを追加したら、 **「Bake All」** ボタンをクリックします。
 8.  プラグインがキュー内のすべてのマテリアルを処理します。ベイクされたテクスチャは指定されたパスに自動的に保存されます。**Texture Asset** はプロジェクトのコンテンツフォルダ内に、**PNG**、**JPEG**、**TGA** ファイルは設定で指定された絶対パスに保存されます。
+
+## Tips
+
+### SDF (Signed Distance Field) のベイク
+
+SDF (Signed Distance Field) は、形状の内側を負の値、外側を正の値で表現することがよくあります。このデータを正しくベイクし、負の値を失わない（0にクランプされない）ようにするためには、高精度かつリニアなフォーマットを使用する必要があります。
+
+`Emissive Color` プロパティは、トーンマッピングを適用せずにHDR（ハイダイナミックレンジ）の値を処理するように設計されているため、この目的に最適です。
+
+**推奨設定:**
+
+*   **マテリアル設定:** マテリアル内で、SDFの計算結果を **Emissive Color** の出力ピンに接続します。
+*   **Property:** `Emissive Color`
+*   **Bit Depth:** `16-bit`
+*   **Output Type:** `Texture Asset` （浮動小数点フォーマットでデータが保存されることを保証します）。
+*   **sRGB:** `無効`（チェックを外す）。SDFデータはリニアであり、ガンマ補正を適用するべきではありません。
 
 ## 要件
 
