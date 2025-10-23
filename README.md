@@ -69,6 +69,10 @@ The `Emissive Color` property is the best choice for this purpose, as its baking
 
 If you encounter any bugs or have a feature request, please [open an issue](https://github.com/embarrassingmoment/MatBaker/issues) on our GitHub repository.
 
+## Development
+
+This plugin was developed with the assistance of the AI software engineer, Jules. This disclosure is intended to promote transparency in the use of AI in software development.
+
 ## License
 
 This plugin is licensed under the [MIT License](LICENSE).
@@ -145,6 +149,10 @@ SDF (Signed Distance Field) は、形状の内側を負の値、外側を正の�
 ## バグ報告・機能要望
 
 バグを発見した場合や機能の要望がある場合は、GitHubリポジトリの[イシュー](https://github.com/embarrassingmoment/MatBaker/issues)からご報告ください。
+
+## 開発
+
+このプラグインは、AIソフトウェアエンジニア「Jules」の支援を受けて開発されました。これは、ソフトウェア開発におけるAI利用の透明性を推進するための開示です。
 
 ## ライセンス
 
