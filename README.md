@@ -65,6 +65,22 @@ The **Bake Queue** tab manages the list of jobs to be processed.
 2.  A progress bar will appear as the plugin processes each job.
 3.  When complete, the baked textures will be available in the output path you specified for each job.
 
+## Tips
+
+### Baking Signed Distance Fields (SDF)
+
+Signed Distance Fields (SDFs) often use negative values to represent the area inside a shape and positive values for the area outside. To correctly bake this data without losing the negative values (i.e., clamping them to 0), you need to use a high-precision, linear format.
+
+The `Emissive Color` property is the best choice for this purpose, as its baking pipeline is set up to handle HDR (High Dynamic Range) values without applying tonemapping.
+
+**Recommended Settings:**
+
+*   **Material Setup:** Connect your SDF calculation result to the **Emissive Color** output pin in your material.
+*   **Property:** `Emissive Color`
+*   **Bit Depth:** `16-bit`
+*   **Output Type:** `Texture Asset` (This ensures the data is saved in a floating-point format).
+*   **sRGB:** `Disabled` (Unchecked). SDF data is linear and should not be gamma-corrected.
+
 ## Requirements
 
 *   Unreal Engine 5.3 or later.
@@ -80,6 +96,10 @@ The **Bake Queue** tab manages the list of jobs to be processed.
 ## Bug Reports & Feature Requests
 
 If you encounter any bugs or have a feature request, please [open an issue](https://github.com/embarrassingmoment/MatBaker/issues) on our GitHub repository.
+
+## Development
+
+This plugin was developed with the assistance of the AI software engineer, Jules. This disclosure is intended to promote transparency in the use of AI in software development.
 
 ## License
 
@@ -154,6 +174,22 @@ This plugin is licensed under the [MIT License](LICENSE).
 2.  プラグインが各ジョブを処理する間、プログレスバーが表示されます。
 3.  完了すると、ベイクされたテクスチャは各ジョブで指定した出力パスで利用可能になります。
 
+## Tips
+
+### SDF (Signed Distance Field) のベイク
+
+SDF (Signed Distance Field) は、形状の内側を負の値、外側を正の値で表現することがよくあります。このデータを正しくベイクし、負の値を失わない（0にクランプされない）ようにするためには、高精度かつリニアなフォーマットを使用する必要があります。
+
+`Emissive Color` プロパティは、トーンマッピングを適用せずにHDR（ハイダイナミックレンジ）の値を処理するように設計されているため、この目的に最適です。
+
+**推奨設定:**
+
+*   **マテリアル設定:** マテリアル内で、SDFの計算結果を **Emissive Color** の出力ピンに接続します。
+*   **Property:** `Emissive Color`
+*   **Bit Depth:** `16-bit`
+*   **Output Type:** `Texture Asset` （浮動小数点フォーマットでデータが保存されることを保証します）。
+*   **sRGB:** `無効`（チェックを外す）。SDFデータはリニアであり、ガンマ補正を適用するべきではありません。
+
 ## 要件
 
 *   Unreal Engine 5.3 以降
@@ -169,6 +205,10 @@ This plugin is licensed under the [MIT License](LICENSE).
 ## バグ報告・機能要望
 
 バグを発見した場合や機能の要望がある場合は、GitHubリポジトリの[イシュー](https://github.com/embarrassingmoment/MatBaker/issues)からご報告ください。
+
+## 開発
+
+このプラグインは、AIソフトウェアエンジニア「Jules」の支援を受けて開発されました。これは、ソフトウェア開発におけるAI利用の透明性を推進するための開示です。
 
 ## ライセンス
 
