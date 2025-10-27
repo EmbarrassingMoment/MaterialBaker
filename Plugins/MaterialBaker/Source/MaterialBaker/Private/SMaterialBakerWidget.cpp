@@ -98,9 +98,11 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 		.HeaderRow
 		(
 			SNew(SHeaderRow)
-			+ SHeaderRow::Column("Material").DefaultLabel(LOCTEXT("MaterialColumn", "Material")).FillWidth(0.4f)
-			+ SHeaderRow::Column("BakedName").DefaultLabel(LOCTEXT("BakedNameColumn", "Baked Name")).FillWidth(0.4f)
-			+ SHeaderRow::Column("Property").DefaultLabel(LOCTEXT("PropertyColumn", "Property")).FillWidth(0.2f)
+			+ SHeaderRow::Column("Material").DefaultLabel(LOCTEXT("MaterialColumn", "Material")).FillWidth(0.2f)
+			+ SHeaderRow::Column("BakedName").DefaultLabel(LOCTEXT("BakedNameColumn", "Baked Name")).FillWidth(0.2f)
+			+ SHeaderRow::Column("Property").DefaultLabel(LOCTEXT("PropertyColumn", "Property")).FillWidth(0.15f)
+			+ SHeaderRow::Column("OutputType").DefaultLabel(LOCTEXT("OutputTypeColumn", "Output Type")).FillWidth(0.15f)
+			+ SHeaderRow::Column("OutputPath").DefaultLabel(LOCTEXT("OutputPathColumn", "Output Path")).FillWidth(0.3f)
 		);
 
 	TabManager = FGlobalTabmanager::Get()->NewTabManager(ConstructUnderMajorTab);
@@ -766,12 +768,20 @@ TSharedRef<ITableRow> SMaterialBakerWidget::OnGenerateRowForBakeQueue(TSharedPtr
 {
 	FString MaterialName = InItem->Material ? InItem->Material->GetName() : TEXT("None");
 	FString BakedName = InItem->BakedName;
+	FString OutputPath = InItem->OutputPath;
 
 	FText PropertyTypeText = FText::GetEmpty();
-	const UEnum* Enum = StaticEnum<EMaterialPropertyType>();
-	if (Enum)
+	const UEnum* PropertyEnum = StaticEnum<EMaterialPropertyType>();
+	if (PropertyEnum)
 	{
-		PropertyTypeText = Enum->GetDisplayNameTextByValue((int64)InItem->PropertyType);
+		PropertyTypeText = PropertyEnum->GetDisplayNameTextByValue((int64)InItem->PropertyType);
+	}
+
+	FText OutputTypeText = FText::GetEmpty();
+	const UEnum* OutputTypeEnum = StaticEnum<EMaterialBakeOutputType>();
+	if (OutputTypeEnum)
+	{
+		OutputTypeText = OutputTypeEnum->GetDisplayNameTextByValue((int64)InItem->OutputType);
 	}
 
 
@@ -780,19 +790,29 @@ TSharedRef<ITableRow> SMaterialBakerWidget::OnGenerateRowForBakeQueue(TSharedPtr
 		[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
-			.FillWidth(0.4f)
+			.FillWidth(0.2f)
 			[
 				SNew(STextBlock).Text(FText::FromString(MaterialName))
 			]
 			+ SHorizontalBox::Slot()
-			.FillWidth(0.4f)
+			.FillWidth(0.2f)
 			[
 				SNew(STextBlock).Text(FText::FromString(BakedName))
 			]
 			+ SHorizontalBox::Slot()
-			.FillWidth(0.2f)
+			.FillWidth(0.15f)
 			[
 				SNew(STextBlock).Text(PropertyTypeText)
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(0.15f)
+			[
+				SNew(STextBlock).Text(OutputTypeText)
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(0.3f)
+			[
+				SNew(STextBlock).Text(FText::FromString(OutputPath))
 			]
 		];
 }
