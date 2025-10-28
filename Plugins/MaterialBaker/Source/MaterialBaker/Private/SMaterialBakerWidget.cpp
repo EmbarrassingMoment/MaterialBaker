@@ -117,6 +117,7 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 				FTabManager::NewStack()
 				->AddTab(BakeSettingsTabId, ETabState::OpenedTab)
 				->AddTab(BakeQueueTabId, ETabState::OpenedTab)
+				->SetForegroundTab(BakeSettingsTabId)
 			)
 		);
 
