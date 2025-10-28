@@ -124,7 +124,7 @@ This plugin is licensed under the [MIT License](LICENSE).
     *   Metallic (メタリック)
     *   Specular (スペキュラ)
     *   Opacity (オパシティ)
-    *   Emissive Color (自己発光色)
+    *   Emissive Color (エミッシブカラー)
 *   **柔軟な出力形式:** ベイクしたテクスチャを **Texture Asset**, **PNG**, **JPEG**, **TGA** ファイルとして保存できます。なお、JPEGファイルは常に8-bitで保存されます。
 *   **ビット深度の選択:** プロジェクトのニーズに合わせて **8-bit** と **16-bit** の出力形式を選択できます。
 *   **ベイクキュー:** 複数のマテリアルをキューに追加し、一括でベイク処理できます。
