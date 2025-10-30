@@ -49,7 +49,6 @@ public class MaterialBaker : ModuleRules
                 "AssetTools",
                 "RHI",
 				"RenderCore",
-                "PropertyEditor",
                 "ImageCore",
                 "DesktopPlatform",
                 "ImageWrapper",
