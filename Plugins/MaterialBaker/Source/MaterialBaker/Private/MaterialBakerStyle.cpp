@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 kurorekish. All Rights Reserved.
 
 #include "MaterialBakerStyle.h"
 #include "Styling/SlateStyleRegistry.h"
