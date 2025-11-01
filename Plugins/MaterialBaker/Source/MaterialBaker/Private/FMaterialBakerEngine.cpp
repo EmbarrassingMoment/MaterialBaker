@@ -299,6 +299,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			ImageFormat = EImageFormat::TGA;
 			break;
 		default:
+			RenderTarget->RemoveFromRoot();
 			return false;
 		}
 
