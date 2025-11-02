@@ -22,6 +22,15 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 *   **Update in Queue:** Select items in the queue to update their settings.
 *   **Automatic Naming and Path:** Automatically suggests a texture name and output path based on the selected material.
 *   **Automatic Suffix:** Automatically appends a relevant suffix to the texture name based on the selected property (e.g., `_N` for Normal, `_BC` for Base Color), and prevents duplicate suffixes.
+
+| Property | Suffix |
+| --- | --- |
+| Base Color | `_BC` |
+| Normal | `_N` |
+| Roughness | `_R` |
+| Metallic | `_M` |
+| Emissive Color | `_E` |
+| Opacity | `_O` |
 *   **Custom Texture Size:** Set the width and height of the output texture (up to 8192x8192).
 *   **Compression Settings:** Choose the desired compression format for your texture assets.
 *   **sRGB Toggle:** Enable or disable sRGB for color accuracy.
@@ -132,6 +141,15 @@ This plugin is licensed under the [MIT License](LICENSE).
 *   **キューの更新:** キュー内のアイテムを選択して、設定を更新できます。
 *   **自動命名とパス提案:** 選択したマテリアルに基づいて、テクスチャ名と出力パスを自動的に提案します。
 *   **自動サフィックス:** 選択したプロパティに応じて、テクスチャ名に関連するサフィックス（例: Normalの場合は `_N`、Base Colorの場合は `_BC`）を自動的に追加し、重複したサフィックスの追加を防ぎます。
+
+| プロパティ | サフィックス |
+| --- | --- |
+| Base Color | `_BC` |
+| Normal | `_N` |
+| Roughness | `_R` |
+| Metallic | `_M` |
+| Emissive Color | `_E` |
+| Opacity | `_O` |
 *   **カスタムテクスチャサイズ:** 出力するテクスチャの幅と高さを自由に設定できます（最大8192x8192）。
 *   **圧縮設定:** テクスチャアセットに適した圧縮形式を選択できます。
 *   **sRGB切り替え:** 色の正確性を保つためにsRGBの有効/無効を切り替えられます。
