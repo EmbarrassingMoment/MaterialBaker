@@ -35,6 +35,13 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 	ThumbnailPool = MakeShareable(new FAssetThumbnailPool(10));
 	CurrentBakeSettings = FMaterialBakeSettings();
 
+	PropertySuffixes.Add(EMaterialPropertyType::BaseColor, TEXT("_BC"));
+	PropertySuffixes.Add(EMaterialPropertyType::Normal, TEXT("_N"));
+	PropertySuffixes.Add(EMaterialPropertyType::Roughness, TEXT("_R"));
+	PropertySuffixes.Add(EMaterialPropertyType::Metallic, TEXT("_M"));
+	PropertySuffixes.Add(EMaterialPropertyType::EmissiveColor, TEXT("_E"));
+	PropertySuffixes.Add(EMaterialPropertyType::Opacity, TEXT("_O"));
+
 	// Initialize compression settings options
 	const UEnum* CompressionSettingsEnum = StaticEnum<TextureCompressionSettings>();
 	if (CompressionSettingsEnum)
@@ -482,6 +489,8 @@ void SMaterialBakerWidget::OnMaterialChanged(const FAssetData& AssetData)
 		{
 			CurrentBakeSettings.BakedName = TEXT("T_") + MaterialName;
 		}
+
+		UpdateBakedNameWithSuffix();
 	}
 
 	if (ThumbnailBox.IsValid() && CurrentBakeSettings.Material)
@@ -607,6 +616,7 @@ void SMaterialBakerWidget::OnPropertyTypeChanged(TSharedPtr<FString> NewSelectio
 				if (*NewSelection == Enum->GetDisplayNameTextByIndex(i).ToString())
 				{
 					CurrentBakeSettings.PropertyType = static_cast<EMaterialPropertyType>(Enum->GetValueByIndex(i));
+					UpdateBakedNameWithSuffix();
 					break;
 				}
 			}
@@ -843,6 +853,32 @@ void SMaterialBakerWidget::OnBakeQueueSelectionChanged(TSharedPtr<FMaterialBakeS
 				]
 			);
 		}
+	}
+}
+
+void SMaterialBakerWidget::UpdateBakedNameWithSuffix()
+{
+	FString BaseName = CurrentBakeSettings.BakedName;
+
+	// First, remove any existing known suffix
+	for (const auto& Pair : PropertySuffixes)
+	{
+		if (BaseName.EndsWith(Pair.Value))
+		{
+			BaseName.LeftChopInline(Pair.Value.Len());
+			break; // Assume only one suffix exists
+		}
+	}
+
+	// Now, add the correct suffix for the current property type
+	if (const FString* Suffix = PropertySuffixes.Find(CurrentBakeSettings.PropertyType))
+	{
+		CurrentBakeSettings.BakedName = BaseName + *Suffix;
+	}
+	else
+	{
+		// If no suffix is defined for the property (e.g., Final Color), just use the base name
+		CurrentBakeSettings.BakedName = BaseName;
 	}
 }
 
