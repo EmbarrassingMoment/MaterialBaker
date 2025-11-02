@@ -46,6 +46,9 @@ struct FMaterialBakeSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Baker")
 	FString BakedName;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Baker")
+	bool bEnableAutomaticSuffix = true;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Baker", meta = (ClampMin = "1", ClampMax = "8192"))
 	int32 TextureWidth = 1024;
 
