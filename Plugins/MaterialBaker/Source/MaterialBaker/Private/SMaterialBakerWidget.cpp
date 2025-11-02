@@ -241,10 +241,32 @@ TSharedRef<SDockTab> SMaterialBakerWidget::OnSpawnTab_BakeSettings(const FSpawnT
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			SNew(SEditableTextBox)
-			.HintText(LOCTEXT("BakedNameHint", "Enter baked texture name"))
-			.Text_Lambda([this]() { return FText::FromString(CurrentBakeSettings.BakedName); })
-			.OnTextChanged(this, &SMaterialBakerWidget::OnBakedNameTextChanged)
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			[
+				SNew(SEditableTextBox)
+				.HintText(LOCTEXT("BakedNameHint", "Enter baked texture name"))
+				.Text_Lambda([this]() { return FText::FromString(CurrentBakeSettings.BakedName); })
+				.OnTextChanged(this, &SMaterialBakerWidget::OnBakedNameTextChanged)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(5.0f, 0.0f, 0.0f, 0.0f)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SCheckBox)
+				.IsChecked_Lambda([this]() -> ECheckBoxState { return CurrentBakeSettings.bEnableAutomaticSuffix ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+				.OnCheckStateChanged(this, &SMaterialBakerWidget::OnEnableSuffixCheckBoxChanged)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(FMargin(5.0f, 0.0f, 0.0f, 0.0f))
+			.VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("EnableSuffixLabel", "Auto Suffix"))
+			]
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
@@ -515,6 +537,12 @@ void SMaterialBakerWidget::OnMaterialChanged(const FAssetData& AssetData)
 void SMaterialBakerWidget::OnBakedNameTextChanged(const FText& InText)
 {
 	CurrentBakeSettings.BakedName = InText.ToString();
+}
+
+void SMaterialBakerWidget::OnEnableSuffixCheckBoxChanged(ECheckBoxState NewState)
+{
+	CurrentBakeSettings.bEnableAutomaticSuffix = (NewState == ECheckBoxState::Checked);
+	UpdateBakedNameWithSuffix();
 }
 
 void SMaterialBakerWidget::OnTextureWidthChanged(int32 NewValue)
@@ -870,14 +898,21 @@ void SMaterialBakerWidget::UpdateBakedNameWithSuffix()
 		}
 	}
 
-	// Now, add the correct suffix for the current property type
-	if (const FString* Suffix = PropertySuffixes.Find(CurrentBakeSettings.PropertyType))
+	// Now, add the correct suffix for the current property type if enabled
+	if (CurrentBakeSettings.bEnableAutomaticSuffix)
 	{
-		CurrentBakeSettings.BakedName = BaseName + *Suffix;
+		if (const FString* Suffix = PropertySuffixes.Find(CurrentBakeSettings.PropertyType))
+		{
+			CurrentBakeSettings.BakedName = BaseName + *Suffix;
+		}
+		else
+		{
+			// If no suffix is defined for the property (e.g., Final Color), just use the base name
+			CurrentBakeSettings.BakedName = BaseName;
+		}
 	}
 	else
 	{
-		// If no suffix is defined for the property (e.g., Final Color), just use the base name
 		CurrentBakeSettings.BakedName = BaseName;
 	}
 }

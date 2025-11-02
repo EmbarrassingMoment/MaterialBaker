@@ -35,6 +35,7 @@ private:
 
 	void OnMaterialChanged(const FAssetData& AssetData);
 	void OnBakedNameTextChanged(const FText& InText);
+	void OnEnableSuffixCheckBoxChanged(ECheckBoxState NewState);
 	void OnTextureWidthChanged(int32 NewValue);
 	void OnTextureHeightChanged(int32 NewValue);
 	void OnCompressionSettingChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
