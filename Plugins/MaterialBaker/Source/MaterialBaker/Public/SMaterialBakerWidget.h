@@ -57,10 +57,13 @@ private:
 	TSharedRef<ITableRow> OnGenerateRowForBakeQueue(TSharedPtr<FMaterialBakeSettings> InItem, const TSharedRef<STableViewBase>& OwnerTable);
 	void OnBakeQueueSelectionChanged(TSharedPtr<FMaterialBakeSettings> InItem, ESelectInfo::Type SelectInfo);
 
+	void UpdateBakedNameWithSuffix();
+
 private:
 	// -- UI Data and State --
 	TSharedPtr<FAssetThumbnailPool> ThumbnailPool;
 
+	TMap<EMaterialPropertyType, FString> PropertySuffixes;
 	FMaterialBakeSettings CurrentBakeSettings;
 	TArray<TSharedPtr<FString>> CompressionSettingOptions;
 	TArray<TSharedPtr<FString>> OutputTypeOptions;
