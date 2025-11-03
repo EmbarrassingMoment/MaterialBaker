@@ -14,6 +14,12 @@ struct FAssetData;
 struct FMaterialBakeSettings;
 class FTabManager;
 
+namespace MaterialBakerConstants
+{
+	const FName BakeSettingsTabId("BakeSettings");
+	const FName BakeQueueTabId("BakeQueue");
+	const float ThumbnailSize = 64.f;
+}
 
 class SMaterialBakerWidget : public SCompoundWidget
 {

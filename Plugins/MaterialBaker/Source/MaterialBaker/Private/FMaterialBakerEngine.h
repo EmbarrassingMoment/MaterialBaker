@@ -5,6 +5,11 @@
 #include "CoreMinimal.h"
 #include "MaterialBakerTypes.h"
 
+namespace MaterialBakerEngineConstants
+{
+	const int32 TotalSteps = 5;
+}
+
 class FMaterialBakerEngine
 {
 public:
