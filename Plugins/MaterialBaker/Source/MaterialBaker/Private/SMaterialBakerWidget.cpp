@@ -25,10 +25,6 @@
 
 #define LOCTEXT_NAMESPACE "FMaterialBakerModule"
 
-static const FName BakeSettingsTabId("BakeSettings");
-static const FName BakeQueueTabId("BakeQueue");
-
-
 void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<SDockTab>& ConstructUnderMajorTab, const TSharedPtr<SWindow>& ConstructUnderWindow)
 {
 	// Initialize data sources
@@ -86,8 +82,8 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 	// -- UI Layout --
 
 	SAssignNew(ThumbnailBox, SBox)
-		.WidthOverride(64.f)
-		.HeightOverride(64.f)
+		.WidthOverride(MaterialBakerConstants::ThumbnailSize)
+		.HeightOverride(MaterialBakerConstants::ThumbnailSize)
 		[
 			SNew(SBorder)
 			.Padding(4.f)
@@ -122,14 +118,14 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 			->Split
 			(
 				FTabManager::NewStack()
-				->AddTab(BakeSettingsTabId, ETabState::OpenedTab)
-				->AddTab(BakeQueueTabId, ETabState::OpenedTab)
-				->SetForegroundTab(BakeSettingsTabId)
+				->AddTab(MaterialBakerConstants::BakeSettingsTabId, ETabState::OpenedTab)
+				->AddTab(MaterialBakerConstants::BakeQueueTabId, ETabState::OpenedTab)
+				->SetForegroundTab(MaterialBakerConstants::BakeSettingsTabId)
 			)
 		);
 
-	TabManager->RegisterTabSpawner(BakeSettingsTabId, FOnSpawnTab::CreateRaw(this, &SMaterialBakerWidget::OnSpawnTab_BakeSettings));
-	TabManager->RegisterTabSpawner(BakeQueueTabId, FOnSpawnTab::CreateRaw(this, &SMaterialBakerWidget::OnSpawnTab_BakeQueue));
+	TabManager->RegisterTabSpawner(MaterialBakerConstants::BakeSettingsTabId, FOnSpawnTab::CreateRaw(this, &SMaterialBakerWidget::OnSpawnTab_BakeSettings));
+	TabManager->RegisterTabSpawner(MaterialBakerConstants::BakeQueueTabId, FOnSpawnTab::CreateRaw(this, &SMaterialBakerWidget::OnSpawnTab_BakeQueue));
 
 	ChildSlot
 	[
@@ -517,7 +513,7 @@ void SMaterialBakerWidget::OnMaterialChanged(const FAssetData& AssetData)
 
 	if (ThumbnailBox.IsValid() && CurrentBakeSettings.Material)
 	{
-		TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, 64, 64, ThumbnailPool));
+		TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, MaterialBakerConstants::ThumbnailSize, MaterialBakerConstants::ThumbnailSize, ThumbnailPool));
 		ThumbnailBox->SetContent(Thumbnail->MakeThumbnailWidget());
 	}
 	else if (ThumbnailBox.IsValid())
@@ -866,7 +862,7 @@ void SMaterialBakerWidget::OnBakeQueueSelectionChanged(TSharedPtr<FMaterialBakeS
 		if (ThumbnailBox.IsValid() && CurrentBakeSettings.Material)
 		{
 			FAssetData AssetData(CurrentBakeSettings.Material);
-			TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, 64, 64, ThumbnailPool));
+			TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, MaterialBakerConstants::ThumbnailSize, MaterialBakerConstants::ThumbnailSize, ThumbnailPool));
 			ThumbnailBox->SetContent(Thumbnail->MakeThumbnailWidget());
 		}
 		else if (ThumbnailBox.IsValid())
