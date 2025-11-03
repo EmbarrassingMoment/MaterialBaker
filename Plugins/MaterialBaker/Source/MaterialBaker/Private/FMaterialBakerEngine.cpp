@@ -184,8 +184,17 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			CaptureComponent->ShowFlags = PreviousShowFlags;
 		}
 
-		MeshActor->Destroy();
-		CaptureActor->Destroy();
+		if (MeshActor)
+		{
+			MeshActor->Destroy();
+			MeshActor = nullptr;
+		}
+
+		if (CaptureActor)
+		{
+			CaptureActor->Destroy();
+			CaptureActor = nullptr;
+		}
 	}
 	FlushRenderingCommands();
 
