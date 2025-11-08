@@ -25,10 +25,6 @@
 
 #define LOCTEXT_NAMESPACE "FMaterialBakerModule"
 
-static const FName BakeSettingsTabId("BakeSettings");
-static const FName BakeQueueTabId("BakeQueue");
-
-
 void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<SDockTab>& ConstructUnderMajorTab, const TSharedPtr<SWindow>& ConstructUnderWindow)
 {
 	// Initialize data sources
@@ -86,8 +82,8 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 	// -- UI Layout --
 
 	SAssignNew(ThumbnailBox, SBox)
-		.WidthOverride(64.f)
-		.HeightOverride(64.f)
+		.WidthOverride(MaterialBakerConstants::ThumbnailSize)
+		.HeightOverride(MaterialBakerConstants::ThumbnailSize)
 		[
 			SNew(SBorder)
 			.Padding(4.f)
@@ -122,14 +118,14 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 			->Split
 			(
 				FTabManager::NewStack()
-				->AddTab(BakeSettingsTabId, ETabState::OpenedTab)
-				->AddTab(BakeQueueTabId, ETabState::OpenedTab)
-				->SetForegroundTab(BakeSettingsTabId)
+				->AddTab(MaterialBakerConstants::BakeSettingsTabId, ETabState::OpenedTab)
+				->AddTab(MaterialBakerConstants::BakeQueueTabId, ETabState::OpenedTab)
+				->SetForegroundTab(MaterialBakerConstants::BakeSettingsTabId)
 			)
 		);
 
-	TabManager->RegisterTabSpawner(BakeSettingsTabId, FOnSpawnTab::CreateRaw(this, &SMaterialBakerWidget::OnSpawnTab_BakeSettings));
-	TabManager->RegisterTabSpawner(BakeQueueTabId, FOnSpawnTab::CreateRaw(this, &SMaterialBakerWidget::OnSpawnTab_BakeQueue));
+	TabManager->RegisterTabSpawner(MaterialBakerConstants::BakeSettingsTabId, FOnSpawnTab::CreateRaw(this, &SMaterialBakerWidget::OnSpawnTab_BakeSettings));
+	TabManager->RegisterTabSpawner(MaterialBakerConstants::BakeQueueTabId, FOnSpawnTab::CreateRaw(this, &SMaterialBakerWidget::OnSpawnTab_BakeQueue));
 
 	ChildSlot
 	[
@@ -241,10 +237,32 @@ TSharedRef<SDockTab> SMaterialBakerWidget::OnSpawnTab_BakeSettings(const FSpawnT
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			SNew(SEditableTextBox)
-			.HintText(LOCTEXT("BakedNameHint", "Enter baked texture name"))
-			.Text_Lambda([this]() { return FText::FromString(CurrentBakeSettings.BakedName); })
-			.OnTextChanged(this, &SMaterialBakerWidget::OnBakedNameTextChanged)
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			[
+				SNew(SEditableTextBox)
+				.HintText(LOCTEXT("BakedNameHint", "Enter baked texture name"))
+				.Text_Lambda([this]() { return FText::FromString(CurrentBakeSettings.BakedName); })
+				.OnTextChanged(this, &SMaterialBakerWidget::OnBakedNameTextChanged)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(5.0f, 0.0f, 0.0f, 0.0f)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SCheckBox)
+				.IsChecked_Lambda([this]() -> ECheckBoxState { return CurrentBakeSettings.bEnableAutomaticSuffix ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+				.OnCheckStateChanged(this, &SMaterialBakerWidget::OnEnableSuffixCheckBoxChanged)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(FMargin(5.0f, 0.0f, 0.0f, 0.0f))
+			.VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("EnableSuffixLabel", "Auto Suffix"))
+			]
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
@@ -495,7 +513,7 @@ void SMaterialBakerWidget::OnMaterialChanged(const FAssetData& AssetData)
 
 	if (ThumbnailBox.IsValid() && CurrentBakeSettings.Material)
 	{
-		TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, 64, 64, ThumbnailPool));
+		TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, MaterialBakerConstants::ThumbnailSize, MaterialBakerConstants::ThumbnailSize, ThumbnailPool));
 		ThumbnailBox->SetContent(Thumbnail->MakeThumbnailWidget());
 	}
 	else if (ThumbnailBox.IsValid())
@@ -515,6 +533,12 @@ void SMaterialBakerWidget::OnMaterialChanged(const FAssetData& AssetData)
 void SMaterialBakerWidget::OnBakedNameTextChanged(const FText& InText)
 {
 	CurrentBakeSettings.BakedName = InText.ToString();
+}
+
+void SMaterialBakerWidget::OnEnableSuffixCheckBoxChanged(ECheckBoxState NewState)
+{
+	CurrentBakeSettings.bEnableAutomaticSuffix = (NewState == ECheckBoxState::Checked);
+	UpdateBakedNameWithSuffix();
 }
 
 void SMaterialBakerWidget::OnTextureWidthChanged(int32 NewValue)
@@ -838,7 +862,7 @@ void SMaterialBakerWidget::OnBakeQueueSelectionChanged(TSharedPtr<FMaterialBakeS
 		if (ThumbnailBox.IsValid() && CurrentBakeSettings.Material)
 		{
 			FAssetData AssetData(CurrentBakeSettings.Material);
-			TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, 64, 64, ThumbnailPool));
+			TSharedPtr<FAssetThumbnail> Thumbnail = MakeShareable(new FAssetThumbnail(AssetData, MaterialBakerConstants::ThumbnailSize, MaterialBakerConstants::ThumbnailSize, ThumbnailPool));
 			ThumbnailBox->SetContent(Thumbnail->MakeThumbnailWidget());
 		}
 		else if (ThumbnailBox.IsValid())
@@ -870,14 +894,21 @@ void SMaterialBakerWidget::UpdateBakedNameWithSuffix()
 		}
 	}
 
-	// Now, add the correct suffix for the current property type
-	if (const FString* Suffix = PropertySuffixes.Find(CurrentBakeSettings.PropertyType))
+	// Now, add the correct suffix for the current property type if enabled
+	if (CurrentBakeSettings.bEnableAutomaticSuffix)
 	{
-		CurrentBakeSettings.BakedName = BaseName + *Suffix;
+		if (const FString* Suffix = PropertySuffixes.Find(CurrentBakeSettings.PropertyType))
+		{
+			CurrentBakeSettings.BakedName = BaseName + *Suffix;
+		}
+		else
+		{
+			// If no suffix is defined for the property (e.g., Final Color), just use the base name
+			CurrentBakeSettings.BakedName = BaseName;
+		}
 	}
 	else
 	{
-		// If no suffix is defined for the property (e.g., Final Color), just use the base name
 		CurrentBakeSettings.BakedName = BaseName;
 	}
 }

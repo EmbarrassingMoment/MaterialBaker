@@ -21,7 +21,7 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 *   **Bake Queue:** Add multiple materials to a queue for batch baking.
 *   **Update in Queue:** Select items in the queue to update their settings.
 *   **Automatic Naming and Path:** Automatically suggests a texture name and output path based on the selected material.
-*   **Automatic Suffix:** Automatically appends a relevant suffix to the texture name based on the selected property (e.g., `_N` for Normal, `_BC` for Base Color), and prevents duplicate suffixes.
+*   **Automatic Suffix:** Automatically appends a relevant suffix to the texture name based on the selected property (e.g., `_N` for Normal, `_BC` for Base Color), and prevents duplicate suffixes. This feature can be disabled.
 
 | Property | Suffix |
 | --- | --- |
@@ -103,6 +103,18 @@ The `Emissive Color` property is the best choice for this purpose, as its baking
 4.  Extract the downloaded archive into the `Plugins` folder.
 5.  Restart your Unreal Engine editor. The plugin should now be available under **Tools > Material Baker**.
 
+## How It Works
+
+Material Baker uses two different methods to bake materials depending on the selected property:
+
+*   **Direct Drawing (`Final Color`):** For the `Final Color` property, the plugin uses a highly efficient method (`DrawMaterialToRenderTarget`) that directly draws the material's final output to a texture. This captures the material exactly as it appears, including lighting and post-processing effects.
+*   **Scene Capture (Other Properties):** For all other properties (e.g., `Base Color`, `Normal`, `Roughness`), the plugin uses a scene capture method. It temporarily spawns a flat plane mesh in the scene, applies the target material to it, and uses a `SceneCapture2D` component to capture the specific G-Buffer or material property. This allows for isolating specific data channels but comes with the limitation of being baked on a standardized shape.
+
+## Limitations
+
+*   **Baking on a Plane Mesh:** For all properties except `Final Color`, the baking process is performed on a standard, flat plane mesh. This means that complex material effects that depend on a specific mesh's UV layout or geometry may not be captured as expected. The tool is designed for baking procedural or tileable material definitions, not for transferring textures from one mesh to another (which is the purpose of texture re-projection tools).
+*   **Opacity Output:** When baking the `Opacity` property, the resulting texture will be a grayscale image where the opacity value is copied into the R, G, B, and Alpha channels.
+
 ## Bug Reports & Feature Requests
 
 If you encounter any bugs or have a feature request, please [open an issue](https://github.com/embarrassingmoment/MatBaker/issues) on our GitHub repository.
@@ -110,6 +122,10 @@ If you encounter any bugs or have a feature request, please [open an issue](http
 ## Development
 
 This plugin was developed with the assistance of the AI software engineer, Jules. This disclosure is intended to promote transparency in the use of AI in software development.
+
+### Note for AI Agents
+
+This repository contains an `AGENTS.md` file at the root, which provides development guidelines and project-specific instructions for AI software engineers. Please review it before making any changes. Currently, this file is available only in Japanese.
 
 ## License
 
@@ -140,7 +156,7 @@ This plugin is licensed under the [MIT License](LICENSE).
 *   **ベイクキュー:** 複数のマテリアルをキューに追加し、一括でベイク処理できます。
 *   **キューの更新:** キュー内のアイテムを選択して、設定を更新できます。
 *   **自動命名とパス提案:** 選択したマテリアルに基づいて、テクスチャ名と出力パスを自動的に提案します。
-*   **自動サフィックス:** 選択したプロパティに応じて、テクスチャ名に関連するサフィックス（例: Normalの場合は `_N`、Base Colorの場合は `_BC`）を自動的に追加し、重複したサフィックスの追加を防ぎます。
+*   **自動サフィックス:** 選択したプロパティに応じて、テクスチャ名に関連するサフィックス（例: Normalの場合は `_N`、Base Colorの場合は `_BC`）を自動的に追加し、重複したサフィックスの追加を防ぎます。この機能は無効化できます。
 
 | プロパティ | サフィックス |
 | --- | --- |
@@ -222,6 +238,18 @@ SDF (Signed Distance Field) は、形状の内側を負の値、外側を正の�
 4.  ダウンロードしたアーカイブを `Plugins` フォルダに展開します。
 5.  Unreal Engineエディタを再起動します。プラグインが **[Tools] > [Material Baker]** から利用できるようになっているはずです。
 
+## 仕組み
+
+Material Bakerは、ベイク対象のプロパティに応じて2つの異なる方式を使い分けています。
+
+*   **直接描画 (`Final Color`):** `Final Color`プロパティは、`DrawMaterialToRenderTarget`という非常に効率的な方法を使い、マテリアルの最終的な出力を直接テクスチャに描き込みます。これにより、ライティングやポストプロセスエフェクトを含んだ、見た目通りの結果をキャプチャします。
+*   **シーンキャプチャ (その他のプロパティ):** `Base Color`や`Normal`など、`Final Color`以外のすべてのプロパティでは、シーンキャプチャ方式が使用されます。この方式では、シーン内に一時的に平らな平面メッシュを配置し、そこに対象のマテリアルを適用した上で、`SceneCapture2D`コンポーネントを用いて特定のG-Bufferやマテリアルプロパティを撮影します。これにより、特定のデータチャンネルを分離して抽出できますが、標準化された形状の上でベイクされるという制限が伴います。
+
+## 制限事項
+
+*   **平面メッシュ上でのベイク:** `Final Color`を除くすべてのプロパティでは、ベイク処理は標準の平らな平面メッシュ上で行われます。これは、特定のメッシュのUVレイアウトやジオメトリに依存する複雑なマテリアルエフェクトが、期待通りにキャプチャされない可能性があることを意味します。このツールは、プロシージャルまたはタイリング可能なマテリアル定義をベイクするために設計されており、あるメッシュから別のメッシュへテクスチャを転写する（テクスチャリプロジェクションツールのような）目的には適していません。
+*   **Opacityの出力:** `Opacity`プロパティをベイクすると、生成されるテクスチャは、不透明度の値がR, G, B, Alphaの各チャンネルにコピーされたグレースケール画像になります。
+
 ## バグ報告・機能要望
 
 バグを発見した場合や機能の要望がある場合は、GitHubリポジトリの[イシュー](https://github.com/embarrassingmoment/MatBaker/issues)からご報告ください。
@@ -229,6 +257,10 @@ SDF (Signed Distance Field) は、形状の内側を負の値、外側を正の�
 ## 開発
 
 このプラグインは、AIソフトウェアエンジニア「Jules」の支援を受けて開発されました。これは、ソフトウェア開発におけるAI利用の透明性を推進するための開示です。
+
+### AIエージェント向けの注記
+
+このリポジトリのルートには、AIソフトウェアエンジニア向けの開発ガイドラインやプロジェクト固有の指示を記載した `AGENTS.md` ファイルが含まれています。何らかの変更を加える前には、このファイルを確認してください。現在、このファイルは日本語のみで提供されています。
 
 ## ライセンス
 

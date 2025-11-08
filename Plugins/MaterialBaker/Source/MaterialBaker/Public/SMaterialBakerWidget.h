@@ -14,6 +14,12 @@ struct FAssetData;
 struct FMaterialBakeSettings;
 class FTabManager;
 
+namespace MaterialBakerConstants
+{
+	const FName BakeSettingsTabId("BakeSettings");
+	const FName BakeQueueTabId("BakeQueue");
+	const float ThumbnailSize = 64.f;
+}
 
 class SMaterialBakerWidget : public SCompoundWidget
 {
@@ -35,6 +41,7 @@ private:
 
 	void OnMaterialChanged(const FAssetData& AssetData);
 	void OnBakedNameTextChanged(const FText& InText);
+	void OnEnableSuffixCheckBoxChanged(ECheckBoxState NewState);
 	void OnTextureWidthChanged(int32 NewValue);
 	void OnTextureHeightChanged(int32 NewValue);
 	void OnCompressionSettingChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);

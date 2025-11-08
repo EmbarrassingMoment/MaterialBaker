@@ -41,12 +41,11 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		return false;
 	}
 
-	const int32 TotalSteps = 5; // Total number of steps for the progress bar
-	FScopedSlowTask SlowTask(TotalSteps, FText::Format(LOCTEXT("BakingMaterial", "Baking Material: {0}..."), FText::FromString(BakeSettings.BakedName)));
+	FScopedSlowTask SlowTask(MaterialBakerEngineConstants::TotalSteps, FText::Format(LOCTEXT("BakingMaterial", "Baking Material: {0}..."), FText::FromString(BakeSettings.BakedName)));
 	SlowTask.MakeDialog();
 
 	// Step 1: Create Render Target
-	SlowTask.EnterProgressFrame(1, LOCTEXT("CreateRenderTarget", "Step 1/5: Creating Render Target..."));
+	SlowTask.EnterProgressFrame(1, FText::Format(LOCTEXT("CreateRenderTarget", "Step 1/{0}: Creating Render Target..."), MaterialBakerEngineConstants::TotalSteps));
 
 	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>();
 	if (!RenderTarget)
@@ -85,7 +84,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 	RenderTarget->UpdateResourceImmediate(true);
 
 	// Step 2: Draw Material
-	SlowTask.EnterProgressFrame(1, LOCTEXT("DrawMaterial", "Step 2/5: Drawing Material..."));
+	SlowTask.EnterProgressFrame(1, FText::Format(LOCTEXT("DrawMaterial", "Step 2/{0}: Drawing Material..."), MaterialBakerEngineConstants::TotalSteps));
 
 	if (BakeSettings.PropertyType == EMaterialPropertyType::FinalColor)
 	{
@@ -184,13 +183,22 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			CaptureComponent->ShowFlags = PreviousShowFlags;
 		}
 
-		MeshActor->Destroy();
-		CaptureActor->Destroy();
+		if (MeshActor)
+		{
+			MeshActor->Destroy();
+			MeshActor = nullptr;
+		}
+
+		if (CaptureActor)
+		{
+			CaptureActor->Destroy();
+			CaptureActor = nullptr;
+		}
 	}
 	FlushRenderingCommands();
 
 	// Step 3: Read Pixels
-	SlowTask.EnterProgressFrame(1, LOCTEXT("ReadPixels", "Step 3/5: Reading Pixels..."));
+	SlowTask.EnterProgressFrame(1, FText::Format(LOCTEXT("ReadPixels", "Step 3/{0}: Reading Pixels..."), MaterialBakerEngineConstants::TotalSteps));
 	FRenderTarget* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
 	if (!RenderTargetResource)
 	{
@@ -268,7 +276,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 
 	if (BakeSettings.OutputType == EMaterialBakeOutputType::Texture)
 	{
-		SlowTask.EnterProgressFrame(1, LOCTEXT("PrepareAsset", "Step 4/5: Preparing Asset..."));
+		SlowTask.EnterProgressFrame(1, FText::Format(LOCTEXT("PrepareAsset", "Step 4/{0}: Preparing Asset..."), MaterialBakerEngineConstants::TotalSteps));
 		FString AssetName = BakeSettings.BakedName;
 
 		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
@@ -303,7 +311,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			break;
 		}
 
-		SlowTask.EnterProgressFrame(1, LOCTEXT("UpdateTexture", "Step 5/5: Updating and Saving Texture..."));
+		SlowTask.EnterProgressFrame(1, FText::Format(LOCTEXT("UpdateTexture", "Step 5/{0}: Updating and Saving Texture..."), MaterialBakerEngineConstants::TotalSteps));
 		NewTexture->Source.Init(TextureSize.X, TextureSize.Y, 1, 1, TextureFormat, RawPixels.GetData());
 		NewTexture->UpdateResource();
 		Package->MarkPackageDirty();
@@ -313,7 +321,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 	}
 	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA)
 	{
-		SlowTask.EnterProgressFrame(1, LOCTEXT("ExportImage", "Step 4/5: Exporting Image..."));
+		SlowTask.EnterProgressFrame(1, FText::Format(LOCTEXT("ExportImage", "Step 4/{0}: Exporting Image..."), MaterialBakerEngineConstants::TotalSteps));
 
 		FString Extension;
 		EImageFormat ImageFormat;
