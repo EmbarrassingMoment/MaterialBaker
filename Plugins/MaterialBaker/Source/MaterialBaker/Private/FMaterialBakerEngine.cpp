@@ -360,9 +360,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		FString SaveFilePath = FPaths::Combine(BakeSettings.OutputPath, BakeSettings.BakedName + Extension);
 		if (SaveFilePath.StartsWith(TEXT("/Game/")))
 		{
-			FString ContentDir = FPaths::ProjectContentDir();
-			SaveFilePath = SaveFilePath.RightChop(6);
-			SaveFilePath = FPaths::Combine(ContentDir, SaveFilePath);
+			SaveFilePath = FPaths::ConvertRelativePathToFull(SaveFilePath);
 		}
 
 		IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
