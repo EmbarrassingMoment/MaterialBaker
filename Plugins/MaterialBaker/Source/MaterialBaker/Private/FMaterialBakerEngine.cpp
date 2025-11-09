@@ -47,13 +47,12 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 	// Step 1: Create Render Target
 	SlowTask.EnterProgressFrame(1, FText::Format(LOCTEXT("CreateRenderTarget", "Step 1/{0}: Creating Render Target..."), MaterialBakerEngineConstants::TotalSteps));
 
-	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>();
+	UTextureRenderTarget2D* RenderTarget = NewObject<UTextureRenderTarget2D>(GetTransientPackage(), NAME_None, RF_Transient);
 	if (!RenderTarget)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("CreateRenderTargetFailed", "Failed to create Render Target."));
 		return false;
 	}
-	RenderTarget->AddToRoot();
 
 	EPixelFormat PixelFormat;
 	ETextureRenderTargetFormat RenderTargetFormat;
@@ -97,16 +96,18 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		if (!PlaneMesh)
 		{
 			FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("PlaneMeshNotFound", "Could not find /Engine/BasicShapes/Plane.Plane"));
-			RenderTarget->RemoveFromRoot();
 			return false;
 		}
 
-		AStaticMeshActor* MeshActor = World->SpawnActor<AStaticMeshActor>();
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.ObjectFlags |= RF_Transient;
+
+		AStaticMeshActor* MeshActor = World->SpawnActor<AStaticMeshActor>(FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		MeshActor->SetActorLocation(FVector(0, 0, 0));
 		MeshActor->GetStaticMeshComponent()->SetStaticMesh(PlaneMesh);
 		MeshActor->GetStaticMeshComponent()->SetMaterial(0, BakeSettings.Material);
 
-		ASceneCapture2D* CaptureActor = World->SpawnActor<ASceneCapture2D>();
+		ASceneCapture2D* CaptureActor = World->SpawnActor<ASceneCapture2D>(FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		USceneCaptureComponent2D* CaptureComponent = CaptureActor->GetCaptureComponent2D();
 
 		CaptureActor->SetActorLocation(FVector(0, 0, 100.0f));
@@ -203,7 +204,6 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 	if (!RenderTargetResource)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ReadPixelFailed", "Failed to get Render Target Resource."));
-		RenderTarget->RemoveFromRoot();
 		return false;
 	}
 
@@ -233,7 +233,6 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 	if (!bReadSuccess)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ReadPixelFailed", "Failed to read pixels from Render Target."));
-		RenderTarget->RemoveFromRoot();
 		return false;
 	}
 
@@ -291,10 +290,8 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		if (!NewTexture)
 		{
 			FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("CreateTextureFailed", "Failed to create new texture asset."));
-			RenderTarget->RemoveFromRoot();
 			return false;
 		}
-		NewTexture->AddToRoot();
 
 		NewTexture->CompressionSettings = BakeSettings.CompressionSettings;
 		NewTexture->SRGB = bSRGB;
@@ -317,7 +314,6 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		Package->MarkPackageDirty();
 		FAssetRegistryModule::GetRegistry().AssetCreated(NewTexture);
 		NewTexture->PostEditChange();
-		NewTexture->RemoveFromRoot();
 	}
 	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA)
 	{
@@ -384,19 +380,16 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			if (!FFileHelper::SaveArrayToFile(CompressedData, *SaveFilePath))
 			{
 				FMessageDialog::Open(EAppMsgType::Ok, FText::Format(LOCTEXT("SaveImageFailed", "Failed to save image to {0}."), FText::FromString(SaveFilePath)));
-				RenderTarget->RemoveFromRoot();
 				return false;
 			}
 		}
 		else
 		{
 			FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ImageWrapperFailed", "Failed to create or set image wrapper."));
-			RenderTarget->RemoveFromRoot();
 			return false;
 		}
 	}
 
-	RenderTarget->RemoveFromRoot();
 	return true;
 }
 
