@@ -484,8 +484,8 @@ SMaterialBakerWidget::~SMaterialBakerWidget()
 {
 	if (TabManager.IsValid())
 	{
-		TabManager->UnregisterTabSpawner(BakeSettingsTabId);
-		TabManager->UnregisterTabSpawner(BakeQueueTabId);
+		TabManager->UnregisterTabSpawner(MaterialBakerConstants::BakeSettingsTabId);
+		TabManager->UnregisterTabSpawner(MaterialBakerConstants::BakeQueueTabId);
 	}
 	ThumbnailPool.Reset();
 }
