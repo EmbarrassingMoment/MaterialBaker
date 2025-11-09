@@ -20,7 +20,7 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 *   **Bit Depth Selection:** Choose between **8-bit** and **16-bit** output to fit your project's needs.
 *   **Bake Queue:** Add multiple materials to a queue for batch baking.
 *   **Update in Queue:** Select items in the queue to update their settings.
-*   **Automatic Naming and Path:** Automatically suggests a texture name and output path based on the selected material.
+*   **Automatic Naming and Path:** Automatically suggests a texture name and output path based on the selected material. It also follows common naming conventions, such as automatically changing a material's `M_` prefix to `T_` for the texture.
 *   **Automatic Suffix:** Automatically appends a relevant suffix to the texture name based on the selected property (e.g., `_N` for Normal, `_BC` for Base Color), and prevents duplicate suffixes. This feature can be disabled.
 
 | Property | Suffix |
@@ -155,7 +155,7 @@ This plugin is licensed under the [MIT License](LICENSE).
 *   **ビット深度の選択:** プロジェクトのニーズに合わせて **8-bit** と **16-bit** の出力形式を選択できます。
 *   **ベイクキュー:** 複数のマテリアルをキューに追加し、一括でベイク処理できます。
 *   **キューの更新:** キュー内のアイテムを選択して、設定を更新できます。
-*   **自動命名とパス提案:** 選択したマテリアルに基づいて、テクスチャ名と出力パスを自動的に提案します。
+*   **自動命名とパス提案:** 選択したマテリアルに基づいて、テクスチャ名と出力パスを自動的に提案します。さらに、マテリアルのプレフィックス `M_` をテクスチャ用の `T_` に自動的に変更するなど、一般的な命名規則にも従います。
 *   **自動サフィックス:** 選択したプロパティに応じて、テクスチャ名に関連するサフィックス（例: Normalの場合は `_N`、Base Colorの場合は `_BC`）を自動的に追加し、重複したサフィックスの追加を防ぎます。この機能は無効化できます。
 
 | プロパティ | サフィックス |
