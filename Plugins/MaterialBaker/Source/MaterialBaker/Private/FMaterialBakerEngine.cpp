@@ -110,12 +110,12 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		ASceneCapture2D* CaptureActor = World->SpawnActor<ASceneCapture2D>(FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		USceneCaptureComponent2D* CaptureComponent = CaptureActor->GetCaptureComponent2D();
 
-		CaptureActor->SetActorLocation(FVector(0, 0, 100.0f));
-		CaptureActor->SetActorRotation(FRotator(-90.f, 0.f, -90.f));
+		CaptureActor->SetActorLocation(MaterialBakerEngineConstants::DefaultCaptureActorLocation);
+		CaptureActor->SetActorRotation(MaterialBakerEngineConstants::DefaultCaptureActorRotation);
 
 		CaptureComponent->TextureTarget = RenderTarget;
 		CaptureComponent->ProjectionType = ECameraProjectionMode::Orthographic;
-		CaptureComponent->OrthoWidth = 200; // Default plane is 200x200
+		CaptureComponent->OrthoWidth = MaterialBakerEngineConstants::DefaultPlaneOrthoWidth;
 		CaptureComponent->bCaptureEveryFrame = false;
 		CaptureComponent->bCaptureOnMovement = false;
 		CaptureComponent->ShowFlags.SetAtmosphere(false);
