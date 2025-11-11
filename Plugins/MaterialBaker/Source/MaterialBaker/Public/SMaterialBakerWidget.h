@@ -19,6 +19,7 @@ namespace MaterialBakerConstants
 	const FName BakeSettingsTabId("BakeSettings");
 	const FName BakeQueueTabId("BakeQueue");
 	const float ThumbnailSize = 64.f;
+	const int32 ThumbnailPoolSize = 10;
 }
 
 class SMaterialBakerWidget : public SCompoundWidget

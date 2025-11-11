@@ -28,7 +28,7 @@
 void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<SDockTab>& ConstructUnderMajorTab, const TSharedPtr<SWindow>& ConstructUnderWindow)
 {
 	// Initialize data sources
-	ThumbnailPool = MakeShareable(new FAssetThumbnailPool(10));
+	ThumbnailPool = MakeShareable(new FAssetThumbnailPool(MaterialBakerConstants::ThumbnailPoolSize));
 	CurrentBakeSettings = FMaterialBakeSettings();
 
 	PropertySuffixes.Add(EMaterialPropertyType::BaseColor, TEXT("_BC"));
