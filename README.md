@@ -41,6 +41,12 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 *   **sRGB Toggle:** Enable or disable sRGB for color accuracy.
 *   **Detailed Progress Display:** Shows detailed progress during the baking process.
 
+## Target Audience
+
+*   **Individuals and small developers** who find Substance Designer too complex or costly.
+*   **Artists who want to quickly experiment** with creating procedural materials and textures directly within Unreal Engine 5.
+*   **Long-time Unreal Engine users** (like me!) who have created numerous procedural materials over the years and need an easy way to bake them all.
+
 ## How to Use
 
 ### 1. Opening the Tool
