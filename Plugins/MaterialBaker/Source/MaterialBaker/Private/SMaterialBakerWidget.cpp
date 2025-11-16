@@ -503,6 +503,10 @@ void SMaterialBakerWidget::OnMaterialChanged(const FAssetData& AssetData)
 		{
 			CurrentBakeSettings.BakedName = TEXT("T_") + MaterialName.RightChop(2);
 		}
+		else if (MaterialName.StartsWith(TEXT("MI_")))
+		{
+			CurrentBakeSettings.BakedName = TEXT("T_") + MaterialName.RightChop(3);
+		}
 		else
 		{
 			CurrentBakeSettings.BakedName = TEXT("T_") + MaterialName;
