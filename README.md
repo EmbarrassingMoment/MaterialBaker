@@ -10,6 +10,12 @@
 
 A free, easy-to-use Unreal Engine plugin for baking procedural materials into textures. It's designed to be simple and efficient, making it perfect for solo developers and small teams.
 
+## Target Audience
+
+*   **Individuals and small-scale developers** who find it challenging to integrate Substance Designer into their workflow.
+*   **Artists and developers** who want to casually experiment with creating procedural materials and textures directly within Unreal Engine 5.
+*   **Long-time UE artists** who, like me, have created so many procedural materials over the years that baking them one by one has become a daunting task.
+
 ## Features
 
 *   **Bake Various Properties:** Bake a wide range of material properties:
