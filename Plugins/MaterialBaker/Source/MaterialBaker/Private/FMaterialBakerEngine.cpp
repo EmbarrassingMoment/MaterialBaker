@@ -315,7 +315,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		FAssetRegistryModule::GetRegistry().AssetCreated(NewTexture);
 		NewTexture->PostEditChange();
 	}
-	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA)
+	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA || BakeSettings.OutputType == EMaterialBakeOutputType::EXR)
 	{
 		SlowTask.EnterProgressFrame(1, FText::Format(LOCTEXT("ExportImage", "Step 4/{0}: Exporting Image..."), MaterialBakerEngineConstants::TotalSteps));
 
@@ -338,6 +338,16 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		case EMaterialBakeOutputType::TGA:
 			Extension = TEXT(".tga");
 			ImageFormat = EImageFormat::TGA;
+			break;
+		case EMaterialBakeOutputType::EXR:
+			Extension = TEXT(".exr");
+			ImageFormat = EImageFormat::EXR;
+			RGBFormat = ERGBFormat::RGBAF;
+			if (BakeSettings.BitDepth != EMaterialBakeBitDepth::Bake_16Bit)
+			{
+				FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("EXRRequires16Bit", "EXR format only supports 16-bit float data."));
+				return false;
+			}
 			break;
 		default:
 			return false;

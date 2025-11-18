@@ -13,6 +13,7 @@ enum class EMaterialBakeOutputType : uint8
 	PNG UMETA(DisplayName = "PNG"),
 	JPEG UMETA(DisplayName = "JPEG"),
 	TGA UMETA(DisplayName = "TGA"),
+	EXR UMETA(DisplayName = "EXR"),
 };
 
 UENUM(BlueprintType)
