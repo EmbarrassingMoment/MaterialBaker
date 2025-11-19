@@ -315,7 +315,7 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		FAssetRegistryModule::GetRegistry().AssetCreated(NewTexture);
 		NewTexture->PostEditChange();
 	}
-	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA)
+	else if (BakeSettings.OutputType == EMaterialBakeOutputType::PNG || BakeSettings.OutputType == EMaterialBakeOutputType::JPEG || BakeSettings.OutputType == EMaterialBakeOutputType::TGA || BakeSettings.OutputType == EMaterialBakeOutputType::EXR)
 	{
 		SlowTask.EnterProgressFrame(1, FText::Format(LOCTEXT("ExportImage", "Step 4/{0}: Exporting Image..."), MaterialBakerEngineConstants::TotalSteps));
 
@@ -339,13 +339,41 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 			Extension = TEXT(".tga");
 			ImageFormat = EImageFormat::TGA;
 			break;
+		case EMaterialBakeOutputType::EXR:
+			Extension = TEXT(".exr");
+			ImageFormat = EImageFormat::EXR;
+			RGBFormat = ERGBFormat::RGBAF;
+			if (BakeSettings.BitDepth != EMaterialBakeBitDepth::Bake_16Bit)
+			{
+				FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("EXRRequires16Bit", "EXR format only supports 16-bit float data."));
+				return false;
+			}
+			break;
 		default:
 			return false;
 		}
 
 		TArray<uint8> ExportPixels = RawPixels;
-		if (ExportBitDepth == 8 && BakeSettings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit)
+		if (BakeSettings.OutputType == EMaterialBakeOutputType::EXR)
 		{
+			// The EXR image wrapper expects 32-bit float (FLinearColor) data to correctly save as 16-bit half-float.
+			if (BakeSettings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit)
+			{
+				TArray<FLinearColor> TempLinearPixels;
+				TempLinearPixels.AddUninitialized(TextureSize.X * TextureSize.Y);
+				const FFloat16Color* Src = reinterpret_cast<const FFloat16Color*>(RawPixels.GetData());
+				for (int32 i = 0; i < TempLinearPixels.Num(); ++i)
+				{
+					TempLinearPixels[i] = FLinearColor(Src[i]);
+				}
+				ExportPixels.SetNum(TempLinearPixels.Num() * sizeof(FLinearColor));
+				FMemory::Memcpy(ExportPixels.GetData(), TempLinearPixels.GetData(), ExportPixels.Num());
+				ExportBitDepth = 32; // SetRaw expects 32 for FLinearColor data
+			}
+		}
+		else if (ExportBitDepth == 8 && BakeSettings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit)
+		{
+			// Convert 16-bit float data to 8-bit for formats like JPEG
 			TArray<FColor> TempPixels;
 			TempPixels.AddUninitialized(TextureSize.X * TextureSize.Y);
 			const FFloat16Color* Src = reinterpret_cast<const FFloat16Color*>(RawPixels.GetData());
@@ -360,8 +388,11 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 		FString SaveFilePath = FPaths::Combine(BakeSettings.OutputPath, BakeSettings.BakedName + Extension);
 		if (SaveFilePath.StartsWith(TEXT("/Game/")))
 		{
-			SaveFilePath = FPaths::ConvertRelativePathToFull(SaveFilePath);
+			// Explicitly replace the /Game/ path with the full content directory path.
+			SaveFilePath = SaveFilePath.Replace(TEXT("/Game/"), *FPaths::ProjectContentDir(), ESearchCase::CaseSensitive);
 		}
+		// Ensure the path is absolute for the image wrapper, handling both /Game/ paths and other relative paths.
+		SaveFilePath = FPaths::ConvertRelativePathToFull(SaveFilePath);
 
 		IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
 		TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormat);

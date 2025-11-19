@@ -84,6 +84,8 @@ private:
 	// -- UI Widgets --
 	TSharedPtr<SBox> ThumbnailBox;
 	TSharedPtr<SListView<TSharedPtr<FMaterialBakeSettings>>> BakeQueueListView;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> BitDepthComboBox;
+	TSharedPtr<SCheckBox> SRGBCheckBox;
 
 	// -- Tab Manager --
 	TSharedPtr<FTabManager> TabManager;
