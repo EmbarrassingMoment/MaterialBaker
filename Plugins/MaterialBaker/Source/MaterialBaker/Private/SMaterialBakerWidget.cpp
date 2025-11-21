@@ -178,7 +178,7 @@ TSharedRef<SDockTab> SMaterialBakerWidget::OnSpawnTab_BakeSettings(const FSpawnT
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			SNew(SComboBox<TSharedPtr<FString>>)
+			SAssignNew(BitDepthComboBox, SComboBox<TSharedPtr<FString>>)
 			.OptionsSource(&BitDepthOptions)
 			.OnSelectionChanged(this, &SMaterialBakerWidget::OnBitDepthChanged)
 			.OnGenerateWidget(this, &SMaterialBakerWidget::MakeWidgetForBitDepthOption)
@@ -352,7 +352,7 @@ TSharedRef<SDockTab> SMaterialBakerWidget::OnSpawnTab_BakeSettings(const FSpawnT
 			.AutoWidth()
 			.VAlign(VAlign_Center)
 			[
-				SNew(SCheckBox)
+				SAssignNew(SRGBCheckBox, SCheckBox)
 				.IsChecked_Lambda([this]() -> ECheckBoxState { return CurrentBakeSettings.bSRGB ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
 				.OnCheckStateChanged(this, &SMaterialBakerWidget::OnSRGBCheckBoxChanged)
 			]
@@ -503,6 +503,10 @@ void SMaterialBakerWidget::OnMaterialChanged(const FAssetData& AssetData)
 		{
 			CurrentBakeSettings.BakedName = TEXT("T_") + MaterialName.RightChop(2);
 		}
+		else if (MaterialName.StartsWith(TEXT("MI_")))
+		{
+			CurrentBakeSettings.BakedName = TEXT("T_") + MaterialName.RightChop(3);
+		}
 		else
 		{
 			CurrentBakeSettings.BakedName = TEXT("T_") + MaterialName;
@@ -567,6 +571,39 @@ void SMaterialBakerWidget::OnCompressionSettingChanged(TSharedPtr<FString> NewSe
 				}
 			}
 		}
+	}
+
+	bool bEnableBitDepth = true;
+	bool bEnableSRGB = true;
+
+	switch (CurrentBakeSettings.OutputType)
+	{
+	case EMaterialBakeOutputType::JPEG:
+		CurrentBakeSettings.BitDepth = EMaterialBakeBitDepth::Bake_8Bit;
+		bEnableBitDepth = false;
+		break;
+	case EMaterialBakeOutputType::EXR:
+		CurrentBakeSettings.BitDepth = EMaterialBakeBitDepth::Bake_16Bit;
+		CurrentBakeSettings.bSRGB = false;
+		bEnableBitDepth = false;
+		bEnableSRGB = false;
+		break;
+	case EMaterialBakeOutputType::Texture:
+	case EMaterialBakeOutputType::PNG:
+	case EMaterialBakeOutputType::TGA:
+	default:
+		break;
+	}
+
+	if (BitDepthComboBox.IsValid())
+	{
+		BitDepthComboBox->SetEnabled(bEnableBitDepth);
+		// Refresh the combo box to show the potentially changed value
+		BitDepthComboBox->RefreshOptions();
+	}
+	if (SRGBCheckBox.IsValid())
+	{
+		SRGBCheckBox->SetEnabled(bEnableSRGB);
 	}
 }
 

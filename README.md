@@ -21,11 +21,18 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
     *   Specular
     *   Opacity
     *   Emissive Color
-*   **Flexible Output:** Save baked textures as **Texture Assets**, **PNG**, **JPEG**, or **TGA** files. Note that JPEG files will always be saved as 8-bit.
+*   **Flexible Output:** Save baked textures as **Texture Assets**, **PNG**, **JPEG**, **TGA**, or **EXR** files.
+    | Output Type | Description | Notes |
+    | :--- | :--- | :--- |
+    | **Texture Asset** | Creates a `.uasset` in the project content folder. | Supports 8-bit and 16-bit. |
+    | **PNG** | Exports a `.png` image file. | Supports 8-bit and 16-bit. |
+    | **JPEG** | Exports a `.jpg` image file. | **Always 8-bit.** |
+    | **TGA** | Exports a `.tga` image file. | Supports 8-bit and 16-bit. |
+    | **EXR** | Exports a `.exr` image file. | **16-bit only** (Linear color space). |
 *   **Bit Depth Selection:** Choose between **8-bit** and **16-bit** output to fit your project's needs.
 *   **Bake Queue:** Add multiple materials to a queue for batch baking.
 *   **Update in Queue:** Select items in the queue to update their settings.
-*   **Automatic Naming and Path:** Automatically suggests a texture name and output path based on the selected material. It also follows common naming conventions, such as automatically changing a material's `M_` prefix to `T_` for the texture.
+*   **Automatic Naming and Path:** Automatically suggests a texture name and output path based on the selected material. It also follows common naming conventions, such as automatically changing a material's `M_` or `MI_` prefix to `T_` for the texture.
 *   **Automatic Suffix:** Automatically appends a relevant suffix to the texture name based on the selected property (e.g., `_N` for Normal, `_BC` for Base Color), and prevents duplicate suffixes. This feature can be disabled.
 
 | Property | Suffix |
