@@ -21,7 +21,15 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
     *   Specular
     *   Opacity
     *   Emissive Color
-*   **Flexible Output:** Save baked textures as **Texture Assets**, **PNG**, **JPEG**, **TGA**, or **EXR** files. Note that JPEG files will always be saved as 8-bit.
+*   **Flexible Output:** Save baked textures in various formats.
+
+| Output Type | Notes |
+| --- | --- |
+| **Texture Asset** | Creates a `UTexture` asset in your project. |
+| **PNG** | Saves as a PNG image file. |
+| **JPEG** | Saves as a JPEG image file. Always 8-bit. |
+| **TGA** | Saves as a TGA image file. |
+| **EXR** | Saves as an EXR image file. Supports 16-bit float data. |
 *   **Bit Depth Selection:** Choose between **8-bit** and **16-bit** output to fit your project's needs.
 *   **Bake Queue:** Add multiple materials to a queue for batch baking.
 *   **Update in Queue:** Select items in the queue to update their settings.
