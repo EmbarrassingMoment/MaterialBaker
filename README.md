@@ -28,7 +28,7 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
     | **PNG** | Exports a `.png` image file. | Supports 8-bit and 16-bit. |
     | **JPEG** | Exports a `.jpg` image file. | **Always 8-bit.** |
     | **TGA** | Exports a `.tga` image file. | Supports 8-bit and 16-bit. |
-    | **EXR** | Exports a `.exr` image file. | **16-bit only** (Linear color space). |
+    | **EXR** | Exports a `.exr` image file. | **16-bit only** (Linear color space). sRGB is automatically disabled. |
 *   **Bit Depth Selection:** Choose between **8-bit** and **16-bit** output to fit your project's needs.
 *   **Bake Queue:** Add multiple materials to a queue for batch baking.
 *   **Update in Queue:** Select items in the queue to update their settings.
