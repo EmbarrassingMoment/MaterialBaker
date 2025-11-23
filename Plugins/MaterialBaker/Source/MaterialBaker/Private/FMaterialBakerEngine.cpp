@@ -26,6 +26,7 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "HAL/IConsoleManager.h"
+#include "PreviewScene.h"
 
 
 #define LOCTEXT_NAMESPACE "FMaterialBakerModule"
@@ -34,7 +35,9 @@ bool FMaterialBakerEngine::BakeMaterial(const FMaterialBakeSettings& BakeSetting
 {
 	FIntPoint TextureSize(BakeSettings.TextureWidth, BakeSettings.TextureHeight);
 
-	UWorld* World = GEditor->GetEditorWorldContext().World();
+	// Create a Preview Scene to handle the baking in an isolated world
+	FPreviewScene PreviewScene;
+	UWorld* World = PreviewScene.GetWorld();
 	if (!World)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot get world context!"));
