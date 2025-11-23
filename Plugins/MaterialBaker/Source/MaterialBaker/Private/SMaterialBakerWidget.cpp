@@ -142,6 +142,37 @@ TSharedRef<SDockTab> SMaterialBakerWidget::OnSpawnTab_BakeSettings(const FSpawnT
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(5.0f)
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("SelectMaterialLabel", "Target Material"))
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(5.0f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(0.0f, 0.0f, 5.0f, 0.0f)
+				.VAlign(VAlign_Bottom)
+				[
+					ThumbnailBox.ToSharedRef()
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.0f)
+				.VAlign(VAlign_Bottom)
+				[
+					SNew(SObjectPropertyEntryBox)
+					.AllowedClass(UMaterialInterface::StaticClass())
+					.OnObjectChanged(this, &SMaterialBakerWidget::OnMaterialChanged)
+					.ObjectPath_Lambda([this]() -> FString {
+						return CurrentBakeSettings.Material ? CurrentBakeSettings.Material->GetPathName() : FString("");
+					})
+				]
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(5.0f)
 		[
 			SNew(STextBlock)
 			.Text(LOCTEXT("PropertyTypeLabel", "Property to Bake"))
@@ -192,37 +223,6 @@ TSharedRef<SDockTab> SMaterialBakerWidget::OnSpawnTab_BakeSettings(const FSpawnT
 						return Enum->GetDisplayNameTextByValue((int64)CurrentBakeSettings.BitDepth);
 					}
 					return FText::GetEmpty();
-				})
-			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(5.0f)
-		[
-			SNew(STextBlock)
-			.Text(LOCTEXT("SelectMaterialLabel", "Target Material"))
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(5.0f)
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.Padding(0.0f, 0.0f, 5.0f, 0.0f)
-			.VAlign(VAlign_Bottom)
-			[
-				ThumbnailBox.ToSharedRef()
-			]
-			+ SHorizontalBox::Slot()
-			.FillWidth(1.0f)
-			.VAlign(VAlign_Bottom)
-			[
-				SNew(SObjectPropertyEntryBox)
-				.AllowedClass(UMaterialInterface::StaticClass())
-				.OnObjectChanged(this, &SMaterialBakerWidget::OnMaterialChanged)
-				.ObjectPath_Lambda([this]() -> FString {
-					return CurrentBakeSettings.Material ? CurrentBakeSettings.Material->GetPathName() : FString("");
 				})
 			]
 		]
