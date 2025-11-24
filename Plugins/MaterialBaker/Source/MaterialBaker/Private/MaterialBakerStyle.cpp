@@ -1,4 +1,4 @@
-// Copyright 2025 kurorekish. All Rights Reserved.
+// Copyright 2025 Kurorekishi. All Rights Reserved.
 
 #include "MaterialBakerStyle.h"
 #include "Styling/SlateStyleRegistry.h"
