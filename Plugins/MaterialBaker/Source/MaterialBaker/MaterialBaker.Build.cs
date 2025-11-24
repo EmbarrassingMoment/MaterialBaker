@@ -1,4 +1,4 @@
-// Copyright 2025 kurorekish. All Rights Reserved.
+// Copyright 2025 EmbarrassingMoment. All Rights Reserved.
 
 using UnrealBuildTool;
 
