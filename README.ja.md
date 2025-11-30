@@ -103,11 +103,9 @@ SDF (Signed Distance Field) は、形状の内側を負の値、外側を正の�
 
 ## インストール
 
-1.  [リリースページ](https://github.com/embarrassingmoment/MatBaker/releases)から最新のリリースをダウンロードします。
-2.  お使いのUnreal Engineプロジェクトのルートディレクトリに移動します。
-3.  `Plugins` フォルダが存在しない場合は作成します。
-4.  ダウンロードしたアーカイブを `Plugins` フォルダに展開します。
-5.  Unreal Engineエディタを再起動します。プラグインが **[Tools] > [Material Baker]** から利用できるようになっているはずです。
+1.  **リポジトリの取得:** このリポジトリを `git clone` するか、ZIP形式でダウンロードして解凍します。
+2.  **プラグインの配置:** ダウンロードしたフォルダ内にある `Plugins/MaterialBaker` フォルダを、導入したいUnreal Engineプロジェクトの `Plugins` フォルダにコピーします。（フォルダがない場合は作成してください）。
+3.  **ビルドの実施:** C++プラグインであるため、コンパイルが必要です。`.uproject` を右クリックして "Generate Visual Studio project files" を選択し、IDEからビルド（コンパイル）を行ってください。
 
 ## 仕組み
 

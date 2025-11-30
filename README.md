@@ -108,11 +108,9 @@ The `Emissive Color` property is the best choice for this purpose, as its baking
 
 ## Installation
 
-1.  Download the latest release from the [Releases](https://github.com/embarrassingmoment/MatBaker/releases) page.
-2.  Navigate to your Unreal Engine project's root directory.
-3.  Create a `Plugins` folder if it doesn't already exist.
-4.  Extract the downloaded archive into the `Plugins` folder.
-5.  Restart your Unreal Engine editor. The plugin should now be available under **Tools > Material Baker**.
+1.  **Clone the repository:** Clone this repository or download the ZIP file and extract it.
+2.  **Place the plugin:** Copy the `Plugins/MaterialBaker` folder from the downloaded files to your Unreal Engine project's `Plugins` directory.
+3.  **Build the project:** Since this is a C++ plugin, you need to compile it. Right-click your `.uproject` file, select **Generate Visual Studio project files**, and then build the project from your IDE.
 
 ## How It Works
 
