@@ -12,15 +12,17 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 
 ## Features
 
-*   **Bake Various Properties:** Bake a wide range of material properties:
-    *   Final Color
-    *   Base Color
-    *   Normal
-    *   Roughness
-    *   Metallic
-    *   Specular
-    *   Opacity
-    *   Emissive Color
+*   **Bake Various Properties:** Bake a wide range of material properties. The tool also supports automatic suffixing for these properties:
+    | Property | Automatic Suffix |
+    | :--- | :--- |
+    | Final Color | (None) |
+    | Base Color | `_BC` |
+    | Normal | `_N` |
+    | Roughness | `_R` |
+    | Metallic | `_M` |
+    | Specular | (None) |
+    | Opacity | `_O` |
+    | Emissive Color | `_E` |
 *   **Flexible Output:** Save baked textures as **Texture Assets**, **PNG**, **JPEG**, **TGA**, or **EXR** files.
     | Output Type | Description | Notes |
     | :--- | :--- | :--- |
@@ -34,15 +36,6 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 *   **Update in Queue:** Select items in the queue to update their settings.
 *   **Automatic Naming and Path:** Automatically suggests a texture name and output path based on the selected material. It also follows common naming conventions, such as automatically changing a material's `M_` or `MI_` prefix to `T_` for the texture.
 *   **Automatic Suffix:** Automatically appends a relevant suffix to the texture name based on the selected property (e.g., `_N` for Normal, `_BC` for Base Color), and prevents duplicate suffixes. This feature can be disabled.
-
-| Property | Suffix |
-| --- | --- |
-| Base Color | `_BC` |
-| Normal | `_N` |
-| Roughness | `_R` |
-| Metallic | `_M` |
-| Emissive Color | `_E` |
-| Opacity | `_O` |
 *   **Custom Texture Size:** Set the width and height of the output texture (up to 8192x8192).
 *   **Compression Settings:** Choose the desired compression format for your texture assets.
 *   **sRGB Toggle:** Enable or disable sRGB for color accuracy.
