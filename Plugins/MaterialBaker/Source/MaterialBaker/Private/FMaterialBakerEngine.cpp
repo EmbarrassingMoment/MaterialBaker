@@ -278,37 +278,33 @@ bool FMaterialBakerEngine::ReadPixels(FMaterialBakerContext& Context)
 	// Post-process for specific property types
 	if (Context.Settings.PropertyType == EMaterialPropertyType::Opacity)
 	{
+		int32 NumPixels = Context.TextureSize.X * Context.TextureSize.Y;
+
 		if (Context.Settings.BitDepth == EMaterialBakeBitDepth::Bake_8Bit)
 		{
-			TArray<FColor> Pixels;
-			Pixels.AddUninitialized(Context.TextureSize.X * Context.TextureSize.Y);
-			FMemory::Memcpy(Pixels.GetData(), Context.RawPixels.GetData(), Context.RawPixels.Num());
-
-			for (FColor& Pixel : Pixels)
+			FColor* Pixels = reinterpret_cast<FColor*>(Context.RawPixels.GetData());
+			for (int32 i = 0; i < NumPixels; ++i)
 			{
+				FColor& Pixel = Pixels[i];
 				// For Opacity, the value is in the R channel.
 				// Copy it to G and B to make it grayscale, and also to Alpha.
 				Pixel.G = Pixel.R;
 				Pixel.B = Pixel.R;
 				Pixel.A = Pixel.R;
 			}
-			FMemory::Memcpy(Context.RawPixels.GetData(), Pixels.GetData(), Context.RawPixels.Num());
 		}
 		else // 16-bit
 		{
-			TArray<FFloat16Color> Pixels;
-			Pixels.AddUninitialized(Context.TextureSize.X * Context.TextureSize.Y);
-			FMemory::Memcpy(Pixels.GetData(), Context.RawPixels.GetData(), Context.RawPixels.Num());
-
-			for (FFloat16Color& Pixel : Pixels)
+			FFloat16Color* Pixels = reinterpret_cast<FFloat16Color*>(Context.RawPixels.GetData());
+			for (int32 i = 0; i < NumPixels; ++i)
 			{
+				FFloat16Color& Pixel = Pixels[i];
 				// For Opacity, the value is in the R channel.
 				// Copy it to G and B to make it grayscale, and also to Alpha.
 				Pixel.G = Pixel.R;
 				Pixel.B = Pixel.R;
 				Pixel.A = Pixel.R;
 			}
-			FMemory::Memcpy(Context.RawPixels.GetData(), Pixels.GetData(), Context.RawPixels.Num());
 		}
 	}
 	return true;
