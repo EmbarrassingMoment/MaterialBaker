@@ -32,9 +32,9 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 	CurrentBakeSettings = FMaterialBakeSettings();
 
 	PropertySuffixes.Add(EMaterialPropertyType::BaseColor, TEXT("_BC"));
-	PropertySuffixes.Add(EMaterialPropertyType::Normal, TEXT("_N"));
-	PropertySuffixes.Add(EMaterialPropertyType::Roughness, TEXT("_R"));
-	PropertySuffixes.Add(EMaterialPropertyType::Metallic, TEXT("_M"));
+	// PropertySuffixes.Add(EMaterialPropertyType::Normal, TEXT("_N"));
+	// PropertySuffixes.Add(EMaterialPropertyType::Roughness, TEXT("_R"));
+	// PropertySuffixes.Add(EMaterialPropertyType::Metallic, TEXT("_M"));
 	PropertySuffixes.Add(EMaterialPropertyType::EmissiveColor, TEXT("_E"));
 	PropertySuffixes.Add(EMaterialPropertyType::Opacity, TEXT("_O"));
 
@@ -52,10 +52,10 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 	const UEnum* OutputTypeEnum = StaticEnum<EMaterialBakeOutputType>();
 	if (OutputTypeEnum)
 	{
-		for (int32 i = 0; i < OutputTypeEnum->NumEnums() - 1; ++i)
-		{
-			OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByIndex(i).ToString())));
-		}
+		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::Texture).ToString())));
+		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::PNG).ToString())));
+		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::JPEG).ToString())));
+		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::EXR).ToString())));
 	}
 
 	// Initialize bit depth options
@@ -72,10 +72,10 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 	const UEnum* PropertyTypeEnum = StaticEnum<EMaterialPropertyType>();
 	if (PropertyTypeEnum)
 	{
-		for (int32 i = 0; i < PropertyTypeEnum->NumEnums() - 1; ++i)
-		{
-			PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByIndex(i).ToString())));
-		}
+		PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByValue((int64)EMaterialPropertyType::FinalColor).ToString())));
+		PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByValue((int64)EMaterialPropertyType::BaseColor).ToString())));
+		PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByValue((int64)EMaterialPropertyType::EmissiveColor).ToString())));
+		PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByValue((int64)EMaterialPropertyType::Opacity).ToString())));
 	}
 
 
