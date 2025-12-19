@@ -18,18 +18,13 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
     | Final Color | (None) |
     | Base Color | `_BC` |
     | Normal | `_N` |
-    | Roughness | `_R` |
-    | Metallic | `_M` |
-    | Specular | (None) |
     | Opacity | `_O` |
     | Emissive Color | `_E` |
-*   **Flexible Output:** Save baked textures as **Texture Assets**, **PNG**, **JPEG**, **TGA**, or **EXR** files.
+*   **Flexible Output:** Save baked textures as **Texture Assets**, **PNG**, or **EXR** files.
     | Output Type | Description | Notes |
     | :--- | :--- | :--- |
     | **Texture Asset** | Creates a `.uasset` in the project content folder. | Supports 8-bit and 16-bit. |
     | **PNG** | Exports a `.png` image file. | Supports 8-bit and 16-bit. |
-    | **JPEG** | Exports a `.jpg` image file. | **Always 8-bit.** |
-    | **TGA** | Exports a `.tga` image file. | Supports 8-bit and 16-bit. |
     | **EXR** | Exports a `.exr` image file. | **16-bit only** (Linear color space). |
 *   **Bit Depth Selection:** Choose between **8-bit** and **16-bit** output to fit your project's needs.
 *   **Bake Queue:** Add multiple materials to a queue for batch baking.
@@ -58,7 +53,7 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
 
 The **Bake Settings** tab is where you define the parameters for each bake.
 
-1.  **Property to Bake:** Select the material channel you want to export (e.g., Base Color, Normal, Roughness).
+1.  **Property to Bake:** Select the material channel you want to export (e.g., Base Color, Normal).
 2.  **Bit Depth:** Choose between **8-bit** for standard textures and **16-bit** for high-quality textures with more color/data precision.
 3.  **Target Material:** Use the dropdown to select the material you want to bake. The plugin will automatically suggest an output name and path.
 4.  **Baked Texture Name:** Assign a name to your output texture.
@@ -67,7 +62,7 @@ The **Bake Settings** tab is where you define the parameters for each bake.
 7.  **sRGB:** Enable this for color textures (Base Color, Final Color). Disable it for linear data maps (Normal, Roughness, Metallic, etc.) to ensure correct results.
 8.  **Output Type:**
     *   **Texture Asset:** Creates a `UTexture` asset inside your project's content folder. This is the most common choice.
-    *   **PNG, JPEG, TGA:** Exports the texture as an image file to a specified location on your computer.
+    *   **PNG, EXR:** Exports the texture as an image file to a specified location on your computer.
 9.  **Output Path:**
     *   For **Texture Assets**, this is a path within your project's `/Game/` directory (e.g., `/Game/Textures/MyBakes`).
     *   For image files, this is an absolute path on your system (e.g., `D:/MyProject/Exports`).
