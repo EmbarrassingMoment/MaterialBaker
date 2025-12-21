@@ -66,6 +66,7 @@ private:
 	void OnBakeQueueSelectionChanged(TSharedPtr<FMaterialBakeSettings> InItem, ESelectInfo::Type SelectInfo);
 
 	void UpdateBakedNameWithSuffix();
+	void UpdateUIToReflectOutputType();
 
 private:
 	// -- UI Data and State --

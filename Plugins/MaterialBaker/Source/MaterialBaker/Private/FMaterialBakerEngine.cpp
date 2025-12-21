@@ -431,6 +431,52 @@ bool FMaterialBakerEngine::ExportImageFile(FMaterialBakerContext& Context)
 			ExportBitDepth = 32; // SetRaw expects 32 for FLinearColor data
 		}
 	}
+	else if (ExportBitDepth == 16 && Context.Settings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit)
+	{
+		// Convert Float16 data to UNORM16 for PNG/TGA
+		// IImageWrapper for 16-bit PNG/TGA expects uint16 data, usually in BGRA order (for TGA/PNG on Windows typically) or RGBA.
+		// FFloat16Color is RGBA.
+		// We'll convert to BGRA uint16 (0-65535).
+
+		TArray<uint16> TempPixels;
+		TempPixels.AddUninitialized(Context.TextureSize.X * Context.TextureSize.Y * 4);
+		const FFloat16Color* Src = reinterpret_cast<const FFloat16Color*>(Context.RawPixels.GetData());
+
+		for (int32 i = 0; i < Context.TextureSize.X * Context.TextureSize.Y; ++i)
+		{
+			FLinearColor Linear = FLinearColor(Src[i]);
+
+			// If sRGB is requested, convert linear to sRGB before quantizing
+			if (Context.bSRGB)
+			{
+				// Apply sRGB curve (standard approx pow(x, 1/2.2))
+				// Using FMath::Pow for high precision
+				const float InvGamma = 1.0f / 2.2f;
+				Linear.R = Linear.R <= 0.0f ? 0.0f : FMath::Pow(Linear.R, InvGamma);
+				Linear.G = Linear.G <= 0.0f ? 0.0f : FMath::Pow(Linear.G, InvGamma);
+				Linear.B = Linear.B <= 0.0f ? 0.0f : FMath::Pow(Linear.B, InvGamma);
+				// Alpha is kept linear
+			}
+
+			// Clamp 0-1
+			float B = FMath::Clamp(Linear.B, 0.0f, 1.0f);
+			float G = FMath::Clamp(Linear.G, 0.0f, 1.0f);
+			float R = FMath::Clamp(Linear.R, 0.0f, 1.0f);
+			float A = FMath::Clamp(Linear.A, 0.0f, 1.0f);
+
+			// Scale to 0-65535 with rounding
+			TempPixels[i * 4 + 0] = (uint16)(B * 65535.0f + 0.5f); // B
+			TempPixels[i * 4 + 1] = (uint16)(G * 65535.0f + 0.5f); // G
+			TempPixels[i * 4 + 2] = (uint16)(R * 65535.0f + 0.5f); // R
+			TempPixels[i * 4 + 3] = (uint16)(A * 65535.0f + 0.5f); // A
+		}
+
+		ExportPixels.SetNum(TempPixels.Num() * sizeof(uint16));
+		FMemory::Memcpy(ExportPixels.GetData(), TempPixels.GetData(), ExportPixels.Num());
+
+		// Ensure format is BGRA (ImageWrapper default usually)
+		RGBFormat = ERGBFormat::BGRA;
+	}
 	else if (ExportBitDepth == 8 && Context.Settings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit)
 	{
 		// Convert 16-bit float data to 8-bit for formats like JPEG
