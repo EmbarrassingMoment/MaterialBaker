@@ -55,6 +55,7 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 		// Manual population for Plan B (Scope Reduction)
 		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::Texture).ToString())));
 		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::PNG).ToString())));
+		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::JPEG).ToString())));
 		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::EXR).ToString())));
 	}
 
@@ -183,7 +184,7 @@ TSharedRef<SDockTab> SMaterialBakerWidget::OnSpawnTab_BakeSettings(const FSpawnT
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			SNew(SComboBox<TSharedPtr<FString>>)
+			SAssignNew(PropertyTypeComboBox, SComboBox<TSharedPtr<FString>>)
 			.OptionsSource(&PropertyTypeOptions)
 			.OnSelectionChanged(this, &SMaterialBakerWidget::OnPropertyTypeChanged)
 			.OnGenerateWidget(this, &SMaterialBakerWidget::MakeWidgetForPropertyTypeOption)
@@ -328,7 +329,7 @@ TSharedRef<SDockTab> SMaterialBakerWidget::OnSpawnTab_BakeSettings(const FSpawnT
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			SNew(SComboBox<TSharedPtr<FString>>)
+			SAssignNew(CompressionSettingsComboBox, SComboBox<TSharedPtr<FString>>)
 			.OptionsSource(&CompressionSettingOptions)
 			.OnSelectionChanged(this, &SMaterialBakerWidget::OnCompressionSettingChanged)
 			.OnGenerateWidget(this, &SMaterialBakerWidget::MakeWidgetForCompressionOption)
@@ -378,7 +379,7 @@ TSharedRef<SDockTab> SMaterialBakerWidget::OnSpawnTab_BakeSettings(const FSpawnT
 		.AutoHeight()
 		.Padding(5.0f)
 		[
-			SNew(SComboBox<TSharedPtr<FString>>)
+			SAssignNew(OutputTypeComboBox, SComboBox<TSharedPtr<FString>>)
 			.OptionsSource(&OutputTypeOptions)
 			.OnSelectionChanged(this, &SMaterialBakerWidget::OnOutputTypeChanged)
 			.OnGenerateWidget(this, &SMaterialBakerWidget::MakeWidgetForOutputTypeOption)
@@ -575,38 +576,8 @@ void SMaterialBakerWidget::OnCompressionSettingChanged(TSharedPtr<FString> NewSe
 		}
 	}
 
-	bool bEnableBitDepth = true;
-	bool bEnableSRGB = true;
-
-	switch (CurrentBakeSettings.OutputType)
-	{
-	case EMaterialBakeOutputType::JPEG:
-		CurrentBakeSettings.BitDepth = EMaterialBakeBitDepth::Bake_8Bit;
-		bEnableBitDepth = false;
-		break;
-	case EMaterialBakeOutputType::EXR:
-		CurrentBakeSettings.BitDepth = EMaterialBakeBitDepth::Bake_16Bit;
-		CurrentBakeSettings.bSRGB = false;
-		bEnableBitDepth = false;
-		bEnableSRGB = false;
-		break;
-	case EMaterialBakeOutputType::Texture:
-	case EMaterialBakeOutputType::PNG:
-	case EMaterialBakeOutputType::TGA:
-	default:
-		break;
-	}
-
-	if (BitDepthComboBox.IsValid())
-	{
-		BitDepthComboBox->SetEnabled(bEnableBitDepth);
-		// Refresh the combo box to show the potentially changed value
-		BitDepthComboBox->RefreshOptions();
-	}
-	if (SRGBCheckBox.IsValid())
-	{
-		SRGBCheckBox->SetEnabled(bEnableSRGB);
-	}
+	UpdateUIToReflectOutputType();
+	SyncComboBoxSelections();
 }
 
 TSharedRef<SWidget> SMaterialBakerWidget::MakeWidgetForCompressionOption(TSharedPtr<FString> InOption)
@@ -636,6 +607,9 @@ void SMaterialBakerWidget::OnOutputTypeChanged(TSharedPtr<FString> NewSelection,
 			}
 		}
 	}
+
+	UpdateUIToReflectOutputType();
+	SyncComboBoxSelections();
 }
 
 TSharedRef<SWidget> SMaterialBakerWidget::MakeWidgetForOutputTypeOption(TSharedPtr<FString> InOption)
@@ -916,6 +890,9 @@ void SMaterialBakerWidget::OnBakeQueueSelectionChanged(TSharedPtr<FMaterialBakeS
 				]
 			);
 		}
+
+		UpdateUIToReflectOutputType();
+		SyncComboBoxSelections();
 	}
 }
 
@@ -949,6 +926,75 @@ void SMaterialBakerWidget::UpdateBakedNameWithSuffix()
 	else
 	{
 		CurrentBakeSettings.BakedName = BaseName;
+	}
+}
+
+void SMaterialBakerWidget::UpdateUIToReflectOutputType()
+{
+	bool bEnableBitDepth = true;
+	bool bEnableSRGB = true;
+
+	switch (CurrentBakeSettings.OutputType)
+	{
+	case EMaterialBakeOutputType::JPEG:
+		CurrentBakeSettings.BitDepth = EMaterialBakeBitDepth::Bake_8Bit;
+		bEnableBitDepth = false;
+		break;
+	case EMaterialBakeOutputType::EXR:
+		CurrentBakeSettings.BitDepth = EMaterialBakeBitDepth::Bake_16Bit;
+		CurrentBakeSettings.bSRGB = false;
+		bEnableBitDepth = false;
+		bEnableSRGB = false;
+		break;
+	case EMaterialBakeOutputType::Texture:
+	case EMaterialBakeOutputType::PNG:
+	case EMaterialBakeOutputType::TGA:
+	default:
+		break;
+	}
+
+	if (BitDepthComboBox.IsValid())
+	{
+		BitDepthComboBox->SetEnabled(bEnableBitDepth);
+	}
+	if (SRGBCheckBox.IsValid())
+	{
+		SRGBCheckBox->SetEnabled(bEnableSRGB);
+	}
+}
+
+void SMaterialBakerWidget::SyncComboBoxSelections()
+{
+	auto SyncCombo = [](TSharedPtr<SComboBox<TSharedPtr<FString>>> ComboBox, const TArray<TSharedPtr<FString>>& Options, const FString& CurrentDisplayName)
+	{
+		if (ComboBox.IsValid())
+		{
+			for (const auto& Option : Options)
+			{
+				if (Option.IsValid() && *Option == CurrentDisplayName)
+				{
+					ComboBox->SetSelectedItem(Option);
+					break;
+				}
+			}
+		}
+	};
+
+	if (const UEnum* Enum = StaticEnum<EMaterialPropertyType>())
+	{
+		SyncCombo(PropertyTypeComboBox, PropertyTypeOptions, Enum->GetDisplayNameTextByValue((int64)CurrentBakeSettings.PropertyType).ToString());
+	}
+	if (const UEnum* Enum = StaticEnum<TextureCompressionSettings>())
+	{
+		SyncCombo(CompressionSettingsComboBox, CompressionSettingOptions, Enum->GetDisplayNameTextByValue(CurrentBakeSettings.CompressionSettings).ToString());
+	}
+	if (const UEnum* Enum = StaticEnum<EMaterialBakeOutputType>())
+	{
+		SyncCombo(OutputTypeComboBox, OutputTypeOptions, Enum->GetDisplayNameTextByValue((int64)CurrentBakeSettings.OutputType).ToString());
+	}
+	if (const UEnum* Enum = StaticEnum<EMaterialBakeBitDepth>())
+	{
+		SyncCombo(BitDepthComboBox, BitDepthOptions, Enum->GetDisplayNameTextByValue((int64)CurrentBakeSettings.BitDepth).ToString());
 	}
 }
 
