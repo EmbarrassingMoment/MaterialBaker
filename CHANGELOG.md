@@ -14,3 +14,9 @@ All notable changes to this project will be documented in this file.
 *   **Automatic Suffixes:** Implemented automatic appending of suffixes (e.g., `_BC`, `_N`) based on the selected property to prevent naming conflicts.
 *   **Custom Resolution:** Enabled setting custom output texture resolutions up to 8192x8192.
 *   **Compression Settings:** Added support for selecting compression settings (e.g., Default, Normalmap) for Texture Assets.
+
+### Bug Fixes
+
+*   **Fixed:** 16-bit PNG/TGA export now correctly writes 16-bit integer data instead of float data.
+*   **Fixed:** UI logic for Bit Depth availability now correctly updates when Output Type is changed.
+*   **Fixed:** Added missing JPEG output option and removed unsupported Normal property to align with Minimum Configuration.
