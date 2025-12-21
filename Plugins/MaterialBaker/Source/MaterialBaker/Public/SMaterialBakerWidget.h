@@ -66,6 +66,8 @@ private:
 	void OnBakeQueueSelectionChanged(TSharedPtr<FMaterialBakeSettings> InItem, ESelectInfo::Type SelectInfo);
 
 	void UpdateBakedNameWithSuffix();
+	void UpdateUIToReflectOutputType();
+	void SyncComboBoxSelections();
 
 private:
 	// -- UI Data and State --
@@ -84,7 +86,10 @@ private:
 	// -- UI Widgets --
 	TSharedPtr<SBox> ThumbnailBox;
 	TSharedPtr<SListView<TSharedPtr<FMaterialBakeSettings>>> BakeQueueListView;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> PropertyTypeComboBox;
 	TSharedPtr<SComboBox<TSharedPtr<FString>>> BitDepthComboBox;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> CompressionSettingsComboBox;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> OutputTypeComboBox;
 	TSharedPtr<SCheckBox> SRGBCheckBox;
 
 	// -- Tab Manager --

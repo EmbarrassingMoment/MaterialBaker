@@ -14,3 +14,7 @@ All notable changes to this project will be documented in this file.
 *   **Automatic Suffixes:** Implemented automatic appending of suffixes (e.g., `_BC`, `_N`) based on the selected property to prevent naming conflicts.
 *   **Custom Resolution:** Enabled setting custom output texture resolutions up to 8192x8192.
 *   **Compression Settings:** Added support for selecting compression settings (e.g., Default, Normalmap) for Texture Assets.
+
+### Fixed
+
+*   **UI Bug Fixes:** Fixed issues where UI state (e.g., Bit Depth, sRGB) did not update correctly when changing Output Type, and Bake Queue selection did not visually update dropdowns. Added missing JPEG output option.
