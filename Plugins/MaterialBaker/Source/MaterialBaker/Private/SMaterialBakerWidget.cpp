@@ -56,6 +56,7 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::Texture).ToString())));
 		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::PNG).ToString())));
 		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::JPEG).ToString())));
+		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::TGA).ToString())));
 		OutputTypeOptions.Add(MakeShareable(new FString(OutputTypeEnum->GetDisplayNameTextByValue((int64)EMaterialBakeOutputType::EXR).ToString())));
 	}
 

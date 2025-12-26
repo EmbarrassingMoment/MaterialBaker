@@ -431,6 +431,38 @@ bool FMaterialBakerEngine::ExportImageFile(FMaterialBakerContext& Context)
 			ExportBitDepth = 32; // SetRaw expects 32 for FLinearColor data
 		}
 	}
+	else if (ExportBitDepth == 16 && Context.Settings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit)
+	{
+		// Convert 16-bit float data to 16-bit integer (UNORM) for PNG/TGA
+		TArray<uint16> TempPixels;
+		TempPixels.AddUninitialized(Context.TextureSize.X * Context.TextureSize.Y * 4); // 4 channels
+		const FFloat16Color* Src = reinterpret_cast<const FFloat16Color*>(Context.RawPixels.GetData());
+
+		float GammaCorrection = 1.0f / 2.2f;
+
+		for (int32 i = 0; i < Context.TextureSize.X * Context.TextureSize.Y; ++i)
+		{
+			FLinearColor LinearColor = FLinearColor(Src[i]);
+
+			if (Context.bSRGB)
+			{
+				// Apply sRGB conversion manually for 16-bit
+				LinearColor.R = FMath::Pow(LinearColor.R, GammaCorrection);
+				LinearColor.G = FMath::Pow(LinearColor.G, GammaCorrection);
+				LinearColor.B = FMath::Pow(LinearColor.B, GammaCorrection);
+				// Alpha is usually linear
+			}
+
+			// Quantize to 0-65535
+			TempPixels[i * 4 + 0] = (uint16)FMath::Clamp(FMath::RoundToInt(LinearColor.B * 65535.0f), 0, 65535); // B
+			TempPixels[i * 4 + 1] = (uint16)FMath::Clamp(FMath::RoundToInt(LinearColor.G * 65535.0f), 0, 65535); // G
+			TempPixels[i * 4 + 2] = (uint16)FMath::Clamp(FMath::RoundToInt(LinearColor.R * 65535.0f), 0, 65535); // R
+			TempPixels[i * 4 + 3] = (uint16)FMath::Clamp(FMath::RoundToInt(LinearColor.A * 65535.0f), 0, 65535); // A
+		}
+
+		ExportPixels.SetNum(TempPixels.Num() * sizeof(uint16));
+		FMemory::Memcpy(ExportPixels.GetData(), TempPixels.GetData(), ExportPixels.Num());
+	}
 	else if (ExportBitDepth == 8 && Context.Settings.BitDepth == EMaterialBakeBitDepth::Bake_16Bit)
 	{
 		// Convert 16-bit float data to 8-bit for formats like JPEG
