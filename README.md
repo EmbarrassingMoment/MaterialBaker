@@ -5,8 +5,8 @@
 >
 > 日本語版のREADMEは[`README.ja.md`](README.ja.md)にあります。
 
-> [!NOTE]
-> This is a pre-release version and is still under development.
+> [!WARNING]
+> Development Frozen: This project is currently on hold and active development has been frozen.
 
 A free, easy-to-use Unreal Engine plugin for baking procedural materials into textures. It's designed to be simple and efficient, making it perfect for solo developers and small teams.
 
