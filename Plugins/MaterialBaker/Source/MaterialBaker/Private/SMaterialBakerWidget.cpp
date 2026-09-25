@@ -19,6 +19,7 @@
 #include "DesktopPlatformModule.h"
 #include "IDesktopPlatform.h"
 #include "Misc/ScopedSlowTask.h"
+#include "Misc/PackageName.h"
 
 #include "Framework/Docking/TabManager.h"
 #include "Widgets/Docking/SDockTab.h"
@@ -79,7 +80,8 @@ void SMaterialBakerWidget::Construct(const FArguments& InArgs, const TSharedRef<
 		PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByValue((int64)EMaterialPropertyType::BaseColor).ToString())));
 		PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByValue((int64)EMaterialPropertyType::Normal).ToString())));
 		PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByValue((int64)EMaterialPropertyType::EmissiveColor).ToString())));
-		PropertyTypeOptions.Add(MakeShareable(new FString(PropertyTypeEnum->GetDisplayNameTextByValue((int64)EMaterialPropertyType::Opacity).ToString())));
+		// Opacity is hidden: its capture path relies on r.BufferVisualizationTarget, which has no effect with the
+		// current scene capture setup, so the baked result is not the material's opacity.
 	}
 
 
@@ -687,9 +689,14 @@ FReply SMaterialBakerWidget::OnBrowseButtonClicked()
 			FolderName
 		))
 		{
-			if (FPaths::MakePathRelativeTo(FolderName, *FPaths::ProjectContentDir()))
+			FPaths::NormalizeDirectoryName(FolderName);
+
+			// Only folders under a mounted content root (e.g. the project's Content folder) map to a package path such as /Game/Textures.
+			// Anything else (including folders outside the project) is kept as a plain file system path for image export.
+			FString PackagePath;
+			if (FPackageName::TryConvertFilenameToLongPackageName(FolderName, PackagePath))
 			{
-				CurrentBakeSettings.OutputPath = FString("/Game/") + FolderName;
+				CurrentBakeSettings.OutputPath = PackagePath;
 			}
 			else
 			{
@@ -702,14 +709,10 @@ FReply SMaterialBakerWidget::OnBrowseButtonClicked()
 
 FReply SMaterialBakerWidget::OnAddToQueueClicked()
 {
-	if (!CurrentBakeSettings.Material)
+	FText ValidationError;
+	if (!ValidateBakeSettings(CurrentBakeSettings, ValidationError))
 	{
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("NoMaterialForQueue", "Please select a material first."));
-		return FReply::Handled();
-	}
-	if (CurrentBakeSettings.BakedName.IsEmpty())
-	{
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("NoNameForQueue", "Please enter a name for the baked texture."));
+		FMessageDialog::Open(EAppMsgType::Ok, ValidationError);
 		return FReply::Handled();
 	}
 
@@ -726,6 +729,13 @@ FReply SMaterialBakerWidget::OnUpdateSelectedClicked()
 {
 	if (SelectedQueueItem.IsValid())
 	{
+		FText ValidationError;
+		if (!ValidateBakeSettings(CurrentBakeSettings, ValidationError))
+		{
+			FMessageDialog::Open(EAppMsgType::Ok, ValidationError);
+			return FReply::Handled();
+		}
+
 		*SelectedQueueItem = CurrentBakeSettings;
 		BakeQueueListView->RequestListRefresh();
 	}
@@ -755,14 +765,10 @@ FReply SMaterialBakerWidget::OnBakeButtonClicked()
 	TSet<FString> UniqueNames;
 	for (const auto& Settings : BakeQueue)
 	{
-		if (!Settings->Material)
+		FText ValidationError;
+		if (!ValidateBakeSettings(*Settings, ValidationError))
 		{
-			FMessageDialog::Open(EAppMsgType::Ok, FText::Format(LOCTEXT("InvalidMaterialInQueue", "An item in the queue has no material selected."), FText::FromString(Settings->BakedName)));
-			return FReply::Handled();
-		}
-		if (Settings->BakedName.IsEmpty())
-		{
-			FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("EmptyNameInQueue", "An item in the queue has no name."));
+			FMessageDialog::Open(EAppMsgType::Ok, FText::Format(LOCTEXT("InvalidItemInQueue", "Queue item \"{0}\" cannot be baked:\n{1}"), FText::FromString(Settings->BakedName), ValidationError));
 			return FReply::Handled();
 		}
 
@@ -938,6 +944,8 @@ void SMaterialBakerWidget::UpdateUIToReflectOutputType()
 	switch (CurrentBakeSettings.OutputType)
 	{
 	case EMaterialBakeOutputType::JPEG:
+	case EMaterialBakeOutputType::TGA:
+		// Neither format supports 16 bits per channel.
 		CurrentBakeSettings.BitDepth = EMaterialBakeBitDepth::Bake_8Bit;
 		bEnableBitDepth = false;
 		break;
@@ -949,7 +957,6 @@ void SMaterialBakerWidget::UpdateUIToReflectOutputType()
 		break;
 	case EMaterialBakeOutputType::Texture:
 	case EMaterialBakeOutputType::PNG:
-	case EMaterialBakeOutputType::TGA:
 	default:
 		break;
 	}
@@ -962,6 +969,48 @@ void SMaterialBakerWidget::UpdateUIToReflectOutputType()
 	{
 		SRGBCheckBox->SetEnabled(bEnableSRGB);
 	}
+}
+
+bool SMaterialBakerWidget::ValidateBakeSettings(const FMaterialBakeSettings& Settings, FText& OutError)
+{
+	if (!Settings.Material)
+	{
+		OutError = LOCTEXT("NoMaterialForQueue", "Please select a material first.");
+		return false;
+	}
+	if (Settings.BakedName.IsEmpty())
+	{
+		OutError = LOCTEXT("NoNameForQueue", "Please enter a name for the baked texture.");
+		return false;
+	}
+	if (Settings.OutputPath.IsEmpty())
+	{
+		OutError = LOCTEXT("NoOutputPath", "Please specify an output path.");
+		return false;
+	}
+
+	if (Settings.OutputType == EMaterialBakeOutputType::Texture)
+	{
+		// Texture assets are created via CreatePackage, which requires a valid long package path under a writable
+		// mount point (e.g. /Game/Textures). Absolute file system paths or paths escaping the root would corrupt the package name.
+		FString PackagePath = Settings.OutputPath;
+		FPaths::NormalizeDirectoryName(PackagePath);
+
+		FText Reason;
+		const bool bValidPackagePath =
+			!PackagePath.Contains(TEXT("..")) &&
+			FPackageName::IsValidLongPackageName(PackagePath, /*bIncludeReadOnlyRoots*/ false, &Reason);
+		if (!bValidPackagePath)
+		{
+			OutError = FText::Format(
+				LOCTEXT("InvalidTextureAssetPath", "Texture Asset output requires a content path such as /Game/Textures.\n\"{0}\" is not a valid content path. {1}"),
+				FText::FromString(Settings.OutputPath),
+				Reason);
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void SMaterialBakerWidget::SyncComboBoxSelections()

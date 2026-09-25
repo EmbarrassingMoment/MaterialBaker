@@ -139,8 +139,19 @@ bool FMaterialBakerEngine::CaptureMaterial(FMaterialBakerContext& Context)
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.ObjectFlags |= RF_Transient;
 
+		// Fit the capture to the actual mesh bounds instead of assuming a fixed plane size.
+		// The capture looks straight down, so the image X axis maps to the plane's X extent and image Y to its Y extent.
+		// OrthoWidth covers the plane's X size; the plane is stretched along Y to fill non-square render targets,
+		// which matches the stretching behaviour of the DrawMaterialToRenderTarget path used for Final Color.
+		const FBoxSphereBounds MeshBounds = PlaneMesh->GetBounds();
+		const float PlaneSizeX = FMath::Max(MeshBounds.BoxExtent.X * 2.0f, UE_KINDA_SMALL_NUMBER);
+		const float PlaneSizeY = FMath::Max(MeshBounds.BoxExtent.Y * 2.0f, UE_KINDA_SMALL_NUMBER);
+		const float TargetAspectRatio = static_cast<float>(Context.TextureSize.Y) / static_cast<float>(Context.TextureSize.X);
+		const float PlaneScaleY = (PlaneSizeX * TargetAspectRatio) / PlaneSizeY;
+
 		AStaticMeshActor* MeshActor = Context.World->SpawnActor<AStaticMeshActor>(FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		MeshActor->SetActorLocation(FVector(0, 0, 0));
+		MeshActor->SetActorScale3D(FVector(1.0f, PlaneScaleY, 1.0f));
 		MeshActor->GetStaticMeshComponent()->SetStaticMesh(PlaneMesh);
 		MeshActor->GetStaticMeshComponent()->SetMaterial(0, Context.Settings.Material);
 
@@ -152,7 +163,7 @@ bool FMaterialBakerEngine::CaptureMaterial(FMaterialBakerContext& Context)
 
 		CaptureComponent->TextureTarget = Context.RenderTarget;
 		CaptureComponent->ProjectionType = ECameraProjectionMode::Orthographic;
-		CaptureComponent->OrthoWidth = MaterialBakerEngineConstants::DefaultPlaneOrthoWidth;
+		CaptureComponent->OrthoWidth = PlaneSizeX;
 		CaptureComponent->bCaptureEveryFrame = false;
 		CaptureComponent->bCaptureOnMovement = false;
 		CaptureComponent->ShowFlags.SetAtmosphere(false);
@@ -343,7 +354,7 @@ bool FMaterialBakerEngine::CreateTextureAsset(FMaterialBakerContext& Context)
 	UPackage* Package = CreatePackage(*UniquePackageName);
 	Package->FullyLoad();
 
-	UTexture2D* NewTexture = NewObject<UTexture2D>(Package, *UniqueAssetName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
+	UTexture2D* NewTexture = NewObject<UTexture2D>(Package, *UniqueAssetName, RF_Public | RF_Standalone);
 	if (!NewTexture)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("CreateTextureFailed", "Failed to create new texture asset."));
@@ -398,6 +409,8 @@ bool FMaterialBakerEngine::ExportImageFile(FMaterialBakerContext& Context)
 	case EMaterialBakeOutputType::TGA:
 		Extension = TEXT(".tga");
 		ImageFormat = EImageFormat::TGA;
+		// TGA has no 16-bit-per-channel mode and the engine's TGA writer only accepts 8-bit BGRA.
+		ExportBitDepth = 8;
 		break;
 	case EMaterialBakeOutputType::EXR:
 		Extension = TEXT(".exr");

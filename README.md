@@ -18,7 +18,6 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
     | Final Color | (None) |
     | Base Color | `_BC` |
     | Normal | `_N` |
-    | Opacity | `_O` |
     | Emissive Color | `_E` |
 *   **Flexible Output:** Save baked textures as **Texture Assets**, **PNG**, **JPEG**, **TGA**, or **EXR** files.
     | Output Type | Description | Notes |
@@ -26,7 +25,7 @@ A free, easy-to-use Unreal Engine plugin for baking procedural materials into te
     | **Texture Asset** | Creates a `.uasset` in the project content folder. | Supports 8-bit and 16-bit. |
     | **PNG** | Exports a `.png` image file. | Supports 8-bit and 16-bit. |
     | **JPEG** | Exports a `.jpg` image file. | **8-bit only** (lossy compression). |
-    | **TGA** | Exports a `.tga` image file. | Supports 8-bit and 16-bit. |
+    | **TGA** | Exports a `.tga` image file. | **8-bit only** (the format has no 16-bit-per-channel mode). |
     | **EXR** | Exports a `.exr` image file. | **16-bit only** (Linear color space). |
 *   **Bit Depth Selection:** Choose between **8-bit** and **16-bit** output to fit your project's needs.
 *   **Bake Queue:** Add multiple materials to a queue for batch baking.
@@ -64,7 +63,7 @@ The **Bake Settings** tab is where you define the parameters for each bake.
 7.  **sRGB:** Enable this for color textures (Base Color, Final Color). Disable it for linear data maps (Normal, Roughness, Metallic, etc.) to ensure correct results.
 8.  **Output Type:**
     *   **Texture Asset:** Creates a `UTexture` asset inside your project's content folder. This is the most common choice.
-    *   **PNG, JPEG, TGA, EXR:** Exports the texture as an image file to a specified location on your computer. Selecting **JPEG** locks the bit depth to 8-bit, and selecting **EXR** locks it to 16-bit.
+    *   **PNG, JPEG, TGA, EXR:** Exports the texture as an image file to a specified location on your computer. Selecting **JPEG** or **TGA** locks the bit depth to 8-bit, and selecting **EXR** locks it to 16-bit.
 9.  **Output Path:**
     *   For **Texture Assets**, this is a path within your project's `/Game/` directory (e.g., `/Game/Textures/MyBakes`).
     *   For image files, this is an absolute path on your system (e.g., `D:/MyProject/Exports`).
@@ -120,7 +119,7 @@ Material Baker uses two different methods to bake materials depending on the sel
 ## Limitations
 
 *   **Baking on a Plane Mesh:** For all properties except `Final Color`, the baking process is performed on a standard, flat plane mesh. This means that complex material effects that depend on a specific mesh's UV layout or geometry may not be captured as expected. The tool is designed for baking procedural or tileable material definitions, not for transferring textures from one mesh to another (which is the purpose of texture re-projection tools).
-*   **Opacity Output:** When baking the `Opacity` property, the resulting texture will be a grayscale image where the opacity value is copied into the R, G, B, and Alpha channels.
+*   **Opacity Baking:** Baking the `Opacity` property is currently unavailable. The capture path for it does not produce correct results, so the option is hidden from the UI until it is fixed.
 
 ## Bug Reports & Feature Requests
 

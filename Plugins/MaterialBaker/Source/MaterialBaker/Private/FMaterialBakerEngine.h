@@ -12,8 +12,8 @@ namespace MaterialBakerEngineConstants
 {
 	const int32 TotalSteps = 5;
 	const FVector DefaultCaptureActorLocation(0, 0, 100.0f);
+	// Looks straight down at the plane. With this rotation the capture's image X axis maps to world X and image Y to world Y.
 	const FRotator DefaultCaptureActorRotation(-90.f, 0.f, -90.f);
-	const float DefaultPlaneOrthoWidth = 200.0f;
 }
 
 class FMaterialBakerEngine

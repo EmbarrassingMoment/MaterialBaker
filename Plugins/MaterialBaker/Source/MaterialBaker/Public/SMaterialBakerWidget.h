@@ -69,6 +69,9 @@ private:
 	void UpdateUIToReflectOutputType();
 	void SyncComboBoxSelections();
 
+	/** Returns false and fills OutError when the settings cannot be baked (missing material/name, invalid output path, ...). */
+	static bool ValidateBakeSettings(const FMaterialBakeSettings& Settings, FText& OutError);
+
 private:
 	// -- UI Data and State --
 	TSharedPtr<FAssetThumbnailPool> ThumbnailPool;
