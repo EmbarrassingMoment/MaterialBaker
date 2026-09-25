@@ -101,7 +101,8 @@ The `Emissive Color` property is the best choice for this purpose, as its baking
 
 ## Requirements
 
-*   Unreal Engine 5.3 or later.
+*   **Primary target: Unreal Engine 5.5 to 5.7.** The plugin is developed and tested against these versions.
+*   **Unreal Engine 5.8:** The plugin also works on UE 5.8. However, the engine itself now provides built-in workflows for baking materials to textures, so UE 5.8 users may want to evaluate the native tools first.
 
 ## Installation
 
